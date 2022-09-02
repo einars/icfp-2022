@@ -26,8 +26,8 @@ impl fmt::Display for CutDirection {
 
 impl fmt::Display for Color {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let bs = self.0.to_le_bytes();
-        write!(f, "[{},{},{},{}]", bs[0], bs[1], bs[2], bs[3])
+        let c = self.0;
+        write!(f, "[{},{},{},{}]", c[0], c[1], c[2], c[3])
     }
 }
 

@@ -54,14 +54,12 @@ fn match_color_inside(s: &str) -> IResult<&str, Color> {
     let (rest, _) = tag(",")(rest)?;
     let (rest, a) = match_decimal(rest)?;
 
-    let cs = u32::from_le_bytes([
+    Ok((rest, Color([
         r.try_into().unwrap(),
         g.try_into().unwrap(),
         b.try_into().unwrap(),
         a.try_into().unwrap(),
-    ]);
-
-    Ok((rest, Color(cs)))
+    ])))
 }
 
 fn match_color(s: &str) -> IResult<&str, Color> {

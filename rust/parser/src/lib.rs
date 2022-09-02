@@ -13,7 +13,7 @@ pub enum CutDirection {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Color(pub u32);
+pub struct Color(pub [u8; 4]);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProgCmd {
@@ -34,14 +34,12 @@ pub enum ProgCmd {
 ///     BlockId(vec![a, b])
 /// }
 /// 
-/// let color = Color(0x04030201);
-/// 
 /// let p_tree = vec![
 ///     ProgCmd::Comment("Com".to_string()),
 ///     ProgCmd::PointCut(BlockId(vec![1, 0, 2]), (1, 2)),
 ///     ProgCmd::LineCut(b2(1, 0), CutDirection::X, 9),
 ///     ProgCmd::LineCut(b2(1, 0), CutDirection::Y, 9),
-///     ProgCmd::Color(b2(1, 0), color),
+///     ProgCmd::Color(b2(1, 0), Color([1, 2, 3, 4])),
 ///     ProgCmd::Swap(b2(1, 0), b2(1, 0)),
 ///     ProgCmd::Merge(b2(1, 0), b2(1, 0)),
 /// ];
