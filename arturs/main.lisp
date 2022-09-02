@@ -107,7 +107,7 @@
 
 (defun box-cost (id)
   (let ((box (find-box id)))
-    (round (/ *surface* (surface (shape-size (box-shape box)))))))
+    (/ *surface* (surface (shape-size (box-shape box))))))
 
 (defun command-cost (cmd)
   (* (box-cost (second cmd))
@@ -117,7 +117,7 @@
        (otherwise 0))))
 
 (defun cost ()
-  (reduce #'+ (mapcar #'command-cost *program*)))
+  (round (reduce #'+ (mapcar #'command-cost *program*))))
 
 (defun score ()
   (+ (cost) (similarity)))
@@ -148,8 +148,8 @@
 (defun lsplit (parent axis num)
   (let ((id -1) (parent-shape (box-shape parent)))
     (mapcar (lambda (s) (make-box :id (incf id) :parent parent :shape s))
-	    (cond ((eq :x axis) (split-shape-x parent-shape num))
-		  ((eq :y axis) (split-shape-y parent-shape num))))))
+	    (cond ((eq 'x axis) (split-shape-x parent-shape num))
+		  ((eq 'y axis) (split-shape-y parent-shape num))))))
 
 (defun lcut (id axis num)
   (let ((box (find-box id)))
@@ -170,10 +170,36 @@
       (dotimes (x (shape-w shape))
 	(set-pixel shape x y color)))))
 
+(defun format-id (id)
+  (format nil "~{~A~^.~}" id))
+
+(defun format-color (color)
+  (format nil "~{~A~^,~}" (coerce color 'list)))
+
+(defun format-cut-command (out cmd)
+  (format out "cut [~A] [~A] [~A]~%"
+	  (format-id (second cmd))
+	  (third cmd) (fourth cmd)))
+
+(defun format-color-command (out cmd)
+  (format out "color [~A] [~A]~%"
+	  (format-id (second cmd))
+	  (format-color (third cmd))))
+
+(defun save-command (out cmd)
+  (case (first cmd)
+    (:lcut (format-cut-command out cmd))
+    (:color (format-color-command out cmd))
+    (otherwise nil)))
+
+(defun save-program ()
+  (with-open-file (out "result.txt" :direction :output :if-exists :supersede)
+    (mapc (lambda (cmd) (save-command out cmd)) (nreverse *program*))))
+
 (defun run-test-program-problem-1 ()
   (color '(0) (make-color 0 74 173 255))
-  (lcut '(0) :x 357)
-  (lcut '(0 0) :y 43)
+  (lcut '(0) 'x 357)
+  (lcut '(0 0) 'y 43)
   (color '(0 0 1) (make-color 128 128 128 255)))
 
 (defun painter (file)
@@ -187,4 +213,5 @@
 	 (*allbox* (empty-allbox)))
     (run-test-program-problem-1)
     (format t "SCORE:~A~%" (score))
+    (save-program)
     (save-canvas)))
