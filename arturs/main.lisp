@@ -109,14 +109,14 @@
   (/ *surface* (surface (shape-size (box-shape box)))))
 
 (defun command-cost (cmd)
-  (* (box-cost (second cmd))
-     (case (first cmd)
-       (:lcut 7)
-       (:color 5)
-       (otherwise 0))))
+  (round (* (box-cost (second cmd))
+	    (case (first cmd)
+	      (:lcut 7)
+	      (:color 5)
+	      (otherwise 0)))))
 
 (defun cost ()
-  (round (reduce #'+ (mapcar #'command-cost *program*))))
+  (reduce #'+ (mapcar #'command-cost *program*)))
 
 (defun score ()
   (+ (cost) (similarity)))
