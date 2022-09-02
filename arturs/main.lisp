@@ -105,8 +105,16 @@
       (dotimes (x *image-w*)
 	(save-color out x y)))))
 
+(defun box-cost (id)
+  (let ((box (find-box id)))
+    (round (/ *surface* (surface (shape-size (box-shape box)))))))
+
 (defun command-cost (cmd)
-  0)
+  (* (box-cost (second cmd))
+     (case (first cmd)
+       (:lcut 7)
+       (:color 5)
+       (otherwise 0))))
 
 (defun cost ()
   (reduce #'+ (mapcar #'command-cost *program*)))
@@ -149,16 +157,18 @@
     (setf (box-children box) (lsplit box axis num))
     (push `(:lcut ,id ,axis ,num) *program*)))
 
+(defun set-pixel (shape x y color)
+  (let ((tx (+ (shape-x shape) x))
+	(ty (- *image-w* (+ (shape-y shape) y 1))))
+    (setf (aref *canvas* tx ty) color)))
+
 (defun color (id color)
   (let* ((box (find-box id))
 	 (shape (box-shape box)))
     (push `(:color ,id ,color) *program*)
     (dotimes (y (shape-h shape))
       (dotimes (x (shape-w shape))
-	(setf (aref *canvas*
-		    (+ (shape-x shape) x)
-		    (- *image-w* (+ (shape-y shape) y 1)))
-	      color)))))
+	(set-pixel shape x y color)))))
 
 (defun run-test-program-problem-1 ()
   (color '(0) (make-color 0 74 173 255))
