@@ -3,5 +3,4 @@ members = [
     "blocks",
     "kleksis",
     "parser",
-    "slugger", 
     ]
