@@ -39,7 +39,7 @@ impl fmt::Display for ProgCmd {
         match self {
             ProgCmd::Comment(s)       => write!(f, "# {}", s),
             ProgCmd::PointCut(b, p)   => write!(f, "cut {} [{},{}]", b, p.0, p.1),
-            ProgCmd::LineCut(b, o, n) => write!(f, "cut {} {} {}", b, o, n),
+            ProgCmd::LineCut(b, o, n) => write!(f, "cut {} {} [{}]", b, o, n),
             ProgCmd::Color(b, c)      => write!(f, "color {} {}", b, c),
             ProgCmd::Swap(ba, bb)     => write!(f, "swap {} {}", ba, bb),
             ProgCmd::Merge(ba, bb)    => write!(f, "merge {} {}", ba, bb),

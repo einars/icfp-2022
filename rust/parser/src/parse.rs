@@ -78,9 +78,13 @@ fn cmd_comment(s: &str) -> IResult<&str, ProgCmd> {
 
 fn cmd_pointcut(s: &str) -> IResult<&str, ProgCmd> {
     let (rest, _) = tag("cut")(s)?;
-    let (rest, _) = many0(char(' '))(rest)?;
-    let (rest, block) = match_block(rest)?;
-    let (rest, _) = many0(char(' '))(rest)?;
+
+    let (rest, block) = delimited(
+        many0(char(' ')),
+        match_block,
+        many0(char(' '))
+    )(rest)?;
+
     let (rest, point) = match_point(rest)?;
     Ok((rest, ProgCmd::PointCut(block, point)))
 }
@@ -92,7 +96,12 @@ fn cmd_linecut(s: &str) -> IResult<&str, ProgCmd> {
     let (rest, _) = many0(char(' '))(rest)?;
     let (rest, o) = match_cutdirection(rest)?;
     let (rest, _) = many0(char(' '))(rest)?;
-    let (rest, decimal) = match_decimal(rest)?;
+    let (rest, decimal) = delimited(
+        char('['),
+        match_decimal,
+        char(']')
+    )(rest)?;
+
     Ok((rest, ProgCmd::LineCut(block, o, decimal)))
 }
 
