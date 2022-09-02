@@ -1,2 +1,6 @@
 [workspace]
-members = ["slugger"]
+members = [
+    "blocks",
+    "kleksis",
+    "slugger", 
+    ]
