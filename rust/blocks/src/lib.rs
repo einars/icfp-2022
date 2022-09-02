@@ -1,3 +1,5 @@
+//! Use the `Block` struct to create and manipulate blocks
+
 use parser::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -178,9 +180,37 @@ impl Block {
         std::mem::swap(&mut self.id, &mut other.id);
     }
 
+    /// Merges a block into another - requires you to specify a new id for the block
+    /// 
+    /// # Examples
+    /// ```
+    /// use blocks::*;
+    /// 
+    /// let block = Block { id: [0].to_vec(), pos: (100, 100), size: (40, 60)};
+    /// let block_n = Block { id: [0].to_vec(), pos: (100, 160), size: (40, 30)};
+    /// let block_w = Block { id: [0].to_vec(), pos: (50, 100), size: (50, 60)};
+    /// 
+    /// let mut block2 = block.clone();
+    /// block2.merge(block_n, 1);
+    /// assert_eq!(block2.pos, (100, 100));
+    /// assert_eq!(block2.size, (40, 90));
+    /// 
+    /// let mut block3 = block.clone();
+    /// block3.merge(block_w, 1);
+    /// assert_eq!(block3.pos, (50, 100));
+    /// assert_eq!(block3.size, (90, 60));
+    /// ```
     pub fn merge(&mut self, other: Block, new_id: u32) -> Result<(), BlockError> {
+        self.is_adjacent(&other)?;
+
         self.id = vec![new_id];
-        self.size = (self.size.0 + other.size.0, self.size.1 + other.size.1);
+        if self.pos.0 == other.pos.0 { // matching x-es
+            self.pos = (self.pos.0, std::cmp::min(self.pos.1, other.pos.1));
+            self.size = (self.size.0, self.size.1 + other.size.1);
+        } else { // matching y-s
+            self.pos = (std::cmp::min(self.pos.0, other.pos.0), self.pos.1);
+            self.size = (self.size.0 + other.size.0, self.size.1);
+        }
 
         Ok(())
     }
@@ -191,7 +221,7 @@ impl Block {
         new_id
     }
 
-    pub fn is_adjacent(&self, other: &Block) -> Result<(), BlockError> {
+    fn is_adjacent(&self, other: &Block) -> Result<(), BlockError> {
         if !is_adjacent_low_level_x(self, other)
             && !is_adjacent_low_level_y(self, other)
             && !is_adjacent_low_level_x(other, self)
@@ -266,7 +296,7 @@ mod tests {
     }
 
     #[test]
-    fn is_adjacent() {
+    fn test_is_adjacent() {
         let block = Block { id: [0].to_vec(), pos: (100, 100), size: (40, 60)};
         let block_n = Block { id: [0].to_vec(), pos: (100, 160), size: (40, 30)};
         let block_e = Block { id: [0].to_vec(), pos: (140, 100), size: (20, 60)};
