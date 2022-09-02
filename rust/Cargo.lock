@@ -1877,6 +1877,7 @@ dependencies = [
 name = "parser"
 version = "0.1.0"
 dependencies = [
+ "nom",
  "serde",
 ]
 

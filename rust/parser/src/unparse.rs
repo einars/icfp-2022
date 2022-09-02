@@ -2,13 +2,13 @@
 use std::fmt;
 use crate::*;
 
-impl From<PainterImpl> for PainterRepr {
+impl From<&PainterImpl> for PainterRepr {
     // unparse
-    fn from (v: PainterImpl) -> Self {
-        let x: Vec<String> = v.lines.into_iter().map(|l| {
+    fn from (v: &PainterImpl) -> Self {
+        let x: Vec<String> = v.0.iter().map(|l| {
             format!("{}", l)
         }).collect();
-        x.join("\n")
+        PainterRepr(x.join("\n"))
     }
 }
 

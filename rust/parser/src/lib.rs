@@ -1,26 +1,27 @@
 use std::convert::From;
 
 pub mod unparse;
+pub mod parse;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockId(Vec<u32>);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Point {
     x: u32,
     y: u32
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Orientation {
     Vertical,
     Horizontal
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Color(u32);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ProgCmd {
     Comment(String),
     PointCut(BlockId, Point),
@@ -31,12 +32,11 @@ pub enum ProgCmd {
 }
 
 
-#[derive(Debug)]
-pub struct PainterImpl {
-    lines: Vec<ProgCmd>
-}
+#[derive(Debug, PartialEq)]
+pub struct PainterImpl(Vec<ProgCmd>);
 
-pub type PainterRepr = String;
+#[derive(Debug, PartialEq)]
+pub struct PainterRepr(String);
 
 
 #[allow(dead_code)]
@@ -50,25 +50,29 @@ fn test_sample () {
 
     let color = Color(0x04030201);
 
-    let p2 = PainterImpl{ lines: vec![
+    let p2 = PainterImpl(vec![
         ProgCmd::Comment("Com".to_string()),
-        ProgCmd::PointCut(b2(1, 0), point),
+        ProgCmd::PointCut(BlockId(vec![1, 0, 2]), point),
         ProgCmd::LineCut(b2(1, 0), Orientation::Horizontal, 9),
         ProgCmd::LineCut(b2(1, 0), Orientation::Vertical, 9),
         ProgCmd::Color(b2(1, 0), color),
         ProgCmd::Swap(b2(1, 0), b2(1, 0)),
         ProgCmd::Merge(b2(1, 0), b2(1, 0)),
-    ]};
+    ]);
     let p2_expected = 
 "# Com
-cut 1.0 [1,2]
+cut 1.0.2 [1,2]
 cut 1.0 [x] 9
 cut 1.0 [y] 9
 color 1.0 [1,2,3,4]
 swap 1.0 1.0
 merge 1.0 1.0";
 
-    let p2_actual: PainterRepr = p2.into();
+    let p2_actual: PainterRepr = (&p2).into();
 
-    assert_eq!(p2_actual, p2_expected);
+    assert_eq!(p2_actual.0, p2_expected);
+
+    let p2_re: PainterImpl = (&p2_actual).into();
+
+    assert_eq!(p2_re, p2);
 }
