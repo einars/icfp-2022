@@ -1,0 +1,8 @@
+#!/bin/bash
+api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkbXVuZHMuY2Vyc0BnbWFpbC5jb20iLCJleHAiOjE2NjIyMDg3NjgsIm9yaWdfaWF0IjoxNjYyMTIyMzY4fQ.e7E0QO-ka2Sje8PxU2F8WU75K8ih1MUEj-oopXPZqF4
+
+file=$(dirname $0)/../../problems/4.png
+echo "# $file" | tee submission.isl
+cargo run --quiet -- $file | tee -a submission.isl
+
+cat submission.isl
