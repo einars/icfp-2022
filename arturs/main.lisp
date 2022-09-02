@@ -4,7 +4,7 @@
 
 (defvar *target* nil)
 (defvar *canvas* nil)
-(defvar *shapes* nil)
+(defvar *allbox* nil)
 
 (defvar *program* nil)
 
@@ -60,8 +60,11 @@
 (defun full-canvas-shape ()
   (make-shape :pos *zero* :size (make-pos :x *image-w* :y *image-h*)))
 
-(defun empty-shapes ()
-  (list (make-box :id '(0) :color *white* :shape (full-canvas-shape))))
+(defun full-canvas-box ()
+  (make-box :id 0 :color *white* :shape (full-canvas-shape)))
+
+(defun empty-allbox ()
+  (make-box :children (list (full-canvas-box))))
 
 (defun save-color (out x y)
   (dotimes (i (1- +components+))
@@ -74,6 +77,37 @@
       (dotimes (x *image-w*)
 	(save-color out x y)))))
 
+(defun command-cost (cmd)
+  0)
+
+(defun cost ()
+  (reduce #'+ (mapcar #'command-cost *program*)))
+
+(defun score ()
+  (+ (cost) (similarity)))
+
+(defun find-child (id node)
+  (let ((id-one (first id))
+	(children (box-children node)))
+    (first (member-if (lambda (x) (= id-one (box-id x))) children))))
+
+(defun find-box (id &optional (node *allbox*))
+  (if (consp id)
+      (find-box (rest id) (find-child id node))
+      node))
+
+(defun lsplit (box axis num)
+  )
+
+(defun lcut (id axis num)
+  (let ((box (find-box id)))
+    (when (consp (box-children box)) (error "box already have children"))
+    (setf (box-children box) (lsplit box axis num))
+    (push `(:lcut ,axis ,num) *program*)))
+
+(defun run-test-program-problem-1 ()
+  (lcut '(0) :x 357))
+
 (defun painter (file)
   (let* ((png (png-read:read-png-file file))
 	 (*program* (make-empty-program))
@@ -81,6 +115,7 @@
 	 (*image-h* (png-read:height png))
 	 (*target* (convert-image png))
 	 (*canvas* (empty-canvas))
-	 (*shapes* (empty-shapes)))
-    (save-canvas)
-    (similarity)))
+	 (*allbox* (empty-allbox)))
+    (run-test-program-problem-1)
+    (format t "SCORE:~A~%" (score))
+    (save-canvas)))
