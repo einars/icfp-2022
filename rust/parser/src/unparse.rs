@@ -1,15 +1,11 @@
-
 use std::fmt;
 use crate::*;
 
-impl From<&PainterImpl> for PainterRepr {
-    // unparse
-    fn from (v: &PainterImpl) -> Self {
-        let x: Vec<String> = v.0.iter().map(|l| {
-            format!("{}", l)
-        }).collect();
-        PainterRepr(x.join("\n"))
-    }
+pub fn unparse(v: &Vec<ProgCmd>) -> String {
+    let x: Vec<String> = v.iter().map(|l| {
+        format!("{}", l)
+    }).collect();
+    x.join("\n")
 }
 
 impl fmt::Display for BlockId {

@@ -1,7 +1,7 @@
-use std::convert::From;
 
 pub mod unparse;
 pub mod parse;
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockId(pub Vec<u32>);
@@ -25,47 +25,49 @@ pub enum ProgCmd {
     Merge(BlockId, BlockId),
 }
 
+/// Move between linear command and parsed text representations
+///
+/// ```
+/// use parser::*;
+///
+/// fn b2(a:u32, b:u32) -> BlockId {
+///     BlockId(vec![a, b])
+/// }
+/// 
+/// fn test_sample () {
+/// 
+///     let color = Color(0x04030201);
+/// 
+///     let p_tree = vec![
+///         ProgCmd::Comment("Com".to_string()),
+///         ProgCmd::PointCut(BlockId(vec![1, 0, 2]), (1, 2)),
+///         ProgCmd::LineCut(b2(1, 0), CutDirection::X, 9),
+///         ProgCmd::LineCut(b2(1, 0), CutDirection::Y, 9),
+///         ProgCmd::Color(b2(1, 0), color),
+///         ProgCmd::Swap(b2(1, 0), b2(1, 0)),
+///         ProgCmd::Merge(b2(1, 0), b2(1, 0)),
+///     ];
+///     let p_source = 
+/// "# Com
+/// cut 1.0.2 [1,2]
+/// cut 1.0 [x] 9
+/// cut 1.0 [y] 9
+/// color 1.0 [1,2,3,4]
+/// swap 1.0 1.0
+/// merge 1.0 1.0";
+/// 
+///     assert_eq!(tree_to_source(&p_tree), p_source);
+///     assert_eq!(source_to_tree(p_source), p_tree);
+/// }
+/// ```
 
-#[derive(Debug, PartialEq)]
-pub struct PainterImpl(pub Vec<ProgCmd>);
 
-#[derive(Debug, PartialEq)]
-pub struct PainterRepr(pub String);
-
-
-#[allow(dead_code)]
-fn b2(a:u32, b:u32) -> BlockId {
-    BlockId(vec![a, b])
+pub fn source_to_tree(s: &str) -> Vec<ProgCmd> {
+    parse::parse(s)
 }
 
-#[test]
-fn test_sample () {
-
-    let color = Color(0x04030201);
-
-    let p2_tree = PainterImpl(vec![
-        ProgCmd::Comment("Com".to_string()),
-        ProgCmd::PointCut(BlockId(vec![1, 0, 2]), (1, 2)),
-        ProgCmd::LineCut(b2(1, 0), CutDirection::X, 9),
-        ProgCmd::LineCut(b2(1, 0), CutDirection::Y, 9),
-        ProgCmd::Color(b2(1, 0), color),
-        ProgCmd::Swap(b2(1, 0), b2(1, 0)),
-        ProgCmd::Merge(b2(1, 0), b2(1, 0)),
-    ]);
-    let p2_source = 
-"# Com
-cut 1.0.2 [1,2]
-cut 1.0 [x] 9
-cut 1.0 [y] 9
-color 1.0 [1,2,3,4]
-swap 1.0 1.0
-merge 1.0 1.0";
-
-    let p2_tree_to_source: PainterRepr = (&p2_tree).into();
-
-    assert_eq!(p2_tree_to_source.0, p2_source);
-
-    let p2_source_to_tree: PainterImpl = (p2_source).into();
-
-    assert_eq!(p2_source_to_tree, p2_tree);
+pub fn tree_to_source(v: &Vec<ProgCmd>) -> String {
+    unparse::unparse(v)
 }
+
+

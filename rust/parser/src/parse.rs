@@ -137,27 +137,10 @@ fn match_command(s: &str) -> IResult<&str, Vec<ProgCmd>> {
     )))(s)
 }
 
-fn parse(code: &str) -> PainterImpl {
+pub fn parse(code: &str) -> Vec<ProgCmd> {
     match match_command(code) {
-        Ok((_, cmds)) => PainterImpl(cmds),
+        Ok((_, cmds)) => cmds,
         Err(e) => panic!("Oh my, {e}"),
-    }
-}
-
-
-
-impl From<&str> for PainterImpl {
-    // parse
-    fn from (v: &str) -> Self {
-        parse(v)
-    }
-}
-
-
-impl From<&PainterRepr> for PainterImpl {
-    // parse
-    fn from (v: &PainterRepr) -> Self {
-        v.0.as_str().into()
     }
 }
 
