@@ -10,6 +10,7 @@
 
 (defvar *image-w* 0)
 (defvar *image-h* 0)
+(defvar *surface* 0)
 
 (defstruct pos x y)
 
@@ -25,9 +26,24 @@
 (defun pos-set-y (p y)
   (make-pos :x (pos-x p) :y y))
 
+(defun surface (p)
+  (* (pos-x p) (pos-y p)))
+
 (defparameter *zero* (make-pos :x 0 :y 0))
 
 (defstruct shape pos size)
+
+(defun shape-x (s)
+  (pos-x (shape-pos s)))
+
+(defun shape-y (s)
+  (pos-y (shape-pos s)))
+
+(defun shape-w (s)
+  (pos-x (shape-size s)))
+
+(defun shape-h (s)
+  (pos-y (shape-size s)))
 
 (defstruct box id shape color parent children)
 
@@ -131,16 +147,31 @@
   (let ((box (find-box id)))
     (when (consp (box-children box)) (error "box already have children"))
     (setf (box-children box) (lsplit box axis num))
-    (push `(:lcut ,axis ,num) *program*)))
+    (push `(:lcut ,id ,axis ,num) *program*)))
+
+(defun color (id color)
+  (let* ((box (find-box id))
+	 (shape (box-shape box)))
+    (push `(:color ,id ,color) *program*)
+    (dotimes (y (shape-h shape))
+      (dotimes (x (shape-w shape))
+	(setf (aref *canvas*
+		    (+ (shape-x shape) x)
+		    (- *image-w* (+ (shape-y shape) y 1)))
+	      color)))))
 
 (defun run-test-program-problem-1 ()
-  (lcut '(0) :x 357))
+  (color '(0) (make-color 0 74 173 255))
+  (lcut '(0) :x 357)
+  (lcut '(0 0) :y 43)
+  (color '(0 0 1) (make-color 128 128 128 255)))
 
 (defun painter (file)
   (let* ((png (png-read:read-png-file file))
 	 (*program* (make-empty-program))
 	 (*image-w* (png-read:width png))
 	 (*image-h* (png-read:height png))
+	 (*surface* (* *image-w* *image-h*))
 	 (*target* (convert-image png))
 	 (*canvas* (empty-canvas))
 	 (*allbox* (empty-allbox)))
