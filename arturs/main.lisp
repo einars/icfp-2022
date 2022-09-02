@@ -6,19 +6,35 @@
 (defvar *canvas* nil)
 
 (defvar *program* nil)
+(defvar *cost* 0)
 
 (defvar *image-w* 0)
 (defvar *image-h* 0)
 
-(defun black-canvas ()
-  (make-array (list *image-w* *image-h* +components+) :initial-element 0))
+(defun make-color (r g b a)
+  (vector r g b a))
 
-(defun pow-2 (x)
-  (* x x))
+(defparameter *black* (make-color 0 0 0 0))
 
-(defun component-distnace (p1 p2 x y i)
-  (pow-2 (- (aref p1 x y i)
-	    (aref p2 x y i))))
+(defun empty-canvas ()
+  (make-array (list *image-w* *image-h*) :initial-element *black*))
+
+(defun get-color (data x y)
+  (let ((color nil))
+    (dotimes (i +components+)
+      (push (aref data x y i) color))
+    (apply #'make-color (nreverse color))))
+
+(defun convert-image (png)
+  (let ((data (png-read:image-data png))
+	(new-image (empty-canvas)))
+    (dotimes (y *image-h* new-image)
+      (dotimes (x *image-w*)
+	(setf (aref new-image x y)
+	      (get-color data x y))))))
+
+(defun component-distance (c1 c2 i)
+  (expt (- (aref c1 i) (aref c2 i)) 2))
 
 (defun similarity (&optional (p1 *target*) (p2 *canvas*))
   (let ((score 0.0))
@@ -26,7 +42,7 @@
       (dotimes (x *image-w*)
 	(let ((sum 0.0))
 	  (dotimes (i +components+)
-	    (incf sum (expt (- (aref p1 x y i) (aref p2 x y i)) 2)))
+	    (incf sum (component-distance (aref p1 x y) (aref p2 x y) i)))
 	  (incf score (sqrt sum)))))
     (* 0.005 score)))
 
@@ -36,8 +52,9 @@
 (defun painter (file)
   (let* ((png (png-read:read-png-file file))
 	 (*program* (make-empty-program))
-	 (*target* (png-read:image-data png))
 	 (*image-w* (png-read:width png))
 	 (*image-h* (png-read:height png))
-	 (*canvas* (black-canvas)))
+	 (*target* (convert-image png))
+	 (*canvas* (empty-canvas))
+	 (*cost* 0))
     (format t "~A~%" (similarity))))
