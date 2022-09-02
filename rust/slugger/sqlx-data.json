@@ -1,0 +1,34 @@
+{
+  "db": "PostgreSQL",
+  "5d786feb4d6b5326e42ec434c729555606c0bdc35672f73a109e66fd02a10100": {
+    "describe": {
+      "columns": [
+        {
+          "name": "cnt",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "select count(*) as cnt from test"
+  },
+  "69c1e19e6605ac1b306e51c89129832c5ec1907a41e45bbc533c629124d4d680": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "insert into test (n, result, created_at) values ($1, $2, now())"
+  }
+}

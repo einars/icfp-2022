@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# cargo install sqlx-cli --no-default-features --features native-tls,postgres
+
+source ./.env
+
+cargo sqlx prepare
