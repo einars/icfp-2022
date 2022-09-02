@@ -30,6 +30,14 @@
   (and (= (pos-x p1) (pos-x p2))
        (= (pos-y p1) (pos-y p2))))
 
+(defun pos-sub (p1 p2)
+  (make-pos :x (- (pos-x p1) (pos-x p2))
+	    :y (- (pos-y p1) (pos-y p2))))
+
+(defun pos-add (p1 p2)
+  (make-pos :x (+ (pos-x p1) (pos-x p2))
+	    :y (+ (pos-y p1) (pos-y p2))))
+
 (defun surface (p)
   (* (pos-x p) (pos-y p)))
 
@@ -49,7 +57,17 @@
 (defun shape-h (s)
   (pos-y (shape-size s)))
 
+(defun pos-in-shape (p s)
+  (and (<= 0 (- (pos-x p) (shape-x s)) (1- (shape-w s)))
+       (<= 0 (- (pos-y p) (shape-y s)) (1- (shape-h s)))))
+
 (defstruct box id shape color parent children)
+
+(defun box-pos (box)
+  (shape-pos (box-shape box)))
+
+(defun box-diff (box1 box2)
+  (pos-sub (box-pos box1) (box-pos box2)))
 
 (defun box-size (box)
   (shape-size (box-shape box)))
@@ -118,6 +136,7 @@
 (defun command-cost (cmd)
   (round (* (box-cost (second cmd))
 	    (case (first cmd)
+	      (:swap 3)
 	      (:lcut 7)
 	      (:color 5)
 	      (otherwise 0)))))
@@ -137,6 +156,13 @@
   (if (consp id)
       (find-box (rest id) (find-child id node))
       node))
+
+(defun box-by-pos (pos &optional (node *allbox*))
+  (let ((children (box-children node)))
+    (cond ((null children) node)
+	  (t (dolist (b children)
+	       (when (pos-in-shape pos (box-shape b))
+		 (return-from box-by-pos (box-by-pos pos b))))))))
 
 (defun box-to-id-reverse (box)
   (if (not (null box))
@@ -188,8 +214,15 @@
       (dotimes (x (shape-w shape))
 	(set-pixel shape x y color)))))
 
-(defun replace-in-parent (box1 box2)
-  (nsubstitute box2 box1 (box-children (box-parent box1))))
+(defun displace-box (box diff)
+  (let ((shape (box-shape box)))
+    (setf (shape-pos shape) (pos-add (shape-pos shape) diff))
+    (mapc (lambda (c) (displace-box c diff)) (box-children box))))
+
+(defun replace-parent (box1 box2 diff new-parent)
+  (nsubstitute box2 box1 (box-children new-parent))
+  (setf (box-parent box2) new-parent)
+  (displace-box box2 diff))
 
 (defun swap-pixels (box1 box2)
   (let ((shape1 (box-shape box1))
@@ -204,13 +237,20 @@
 (defun swap (box1 box2)
   (when (not (pos-eq (box-size box1) (box-size box2)))
     (error "box sizes for swap is not equal"))
-  (push `(:swap ,box1 ,box2) *program*)
-  (replace-in-parent box1 box2)
-  (replace-in-parent box2 box1)
+  (push `(:swap ,box1 ,box2 ,(box-to-id box1) ,(box-to-id box2)) *program*)
+  (let ((parent1 (box-parent box1))
+	(parent2 (box-parent box2))
+	(diff1 (box-diff box1 box2))
+	(diff2 (box-diff box2 box1)))
+    (replace-parent box1 box2 diff1 parent1)
+    (replace-parent box2 box1 diff2 parent2))
   (swap-pixels box1 box2))
 
+(defun format-raw-id (id)
+  (format nil "~{~A~^.~}" id))
+
 (defun format-id (box)
-  (format nil "~{~A~^.~}" (box-to-id box)))
+  (format-raw-id (box-to-id box)))
 
 (defun format-color (color)
   (format nil "~{~A~^,~}" (coerce color 'list)))
@@ -220,6 +260,11 @@
 	  (format-id (second cmd))
 	  (third cmd) (fourth cmd)))
 
+(defun format-swap-command (out cmd)
+  (format out "swap [~A] [~A]~%"
+	  (format-raw-id (fourth cmd))
+	  (format-raw-id (fifth cmd))))
+
 (defun format-color-command (out cmd)
   (format out "color [~A] [~A]~%"
 	  (format-id (second cmd))
@@ -228,6 +273,7 @@
 (defun save-command (out cmd)
   (case (first cmd)
     (:lcut (format-cut-command out cmd))
+    (:swap (format-swap-command out cmd))
     (:color (format-color-command out cmd))
     (otherwise nil)))
 
@@ -236,27 +282,33 @@
     (mapc (lambda (cmd) (save-command out cmd)) (nreverse *program*))))
 
 (defun slice-horizontal-problem-1 (n w box p)
+  (when p (color box (if (oddp n) (make-color 0 0 0 255) *white*)))
   (when (> w 0)
     (let ((children (lcut box 'x w)))
-      (setf box (second children))
-      (slice-horizontal-problem-1 (1+ n) (- w 40) (first children) p)))
-  (when (evenp (+ n p)) (color box *white*)))
+      (slice-horizontal-problem-1 (1+ n) (- w 40) (first children) p))))
 
 (defun slice-vertical-problem-1 (n h box)
   (when (< h 400)
     (let ((children (lcut box 'y h)))
       (setf box (first children))
       (slice-vertical-problem-1 (1+ n) (+ 40 h) (second children))))
-  (slice-horizontal-problem-1 0 319 box (mod n 2)))
+  (when (oddp n) (color box *white*))
+  (slice-horizontal-problem-1 0 320 box (= h 400)))
 
 (defun run-test-program-problem-1 ()
   (color (find-box '(0)) (make-color 0 74 173 255))
-  (lcut (find-box '(0)) 'x 357)
-  (lcut (find-box '(0 0)) 'y 43)
+  (lcut (find-box '(0)) 'x 360)
+  (lcut (find-box '(0 0)) 'y 40)
   (color (find-box '(0 0 1)) (make-color 0 0 0 255))
-  (slice-vertical-problem-1 0 81 (find-box '(0 0 1)))
-  (color (find-box '(0 0 1 0 1))
-	 (make-color 0 74 173 255)))
+  (slice-vertical-problem-1 0 80 (find-box '(0 0 1)))
+  (loop for x from 340 downto 20 by 80 do
+    (loop for y from 60 to 300 by 80 do
+      (swap (box-by-pos (make-pos :x x :y y))
+	    (box-by-pos (make-pos :x x :y (+ y 40))))))
+  (color (box-by-pos (make-pos :x 340 :y 60))
+         (make-color 0 74 173 255)))
+
+
 
 (defun painter (file)
   (let* ((png (png-read:read-png-file file))
