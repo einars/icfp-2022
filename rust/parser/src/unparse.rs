@@ -11,7 +11,7 @@ pub fn unparse(v: &Vec<ProgCmd>) -> String {
 impl fmt::Display for BlockId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let vs: Vec<String> = self.0.iter().map(|n| format!("{}", n)).collect();
-        write!(f, "{}", vs.join("."))
+        write!(f, "[{}]", vs.join("."))
     }
 }
 

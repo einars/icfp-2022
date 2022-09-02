@@ -25,10 +25,8 @@ fn match_point(s: &str) -> IResult<&str, (u32, u32)> {
     Ok((rest, (x, y)))
 }
 fn match_cutdirection(s: &str) -> IResult<&str, CutDirection> {
-    let rest = s;
-    let (rest, _) = char('[')(rest)?;
-    let (rest, o) = one_of("xyXY")(rest)?;
-    let (rest, _) = char(']')(rest)?;
+
+    let (rest, o) = delimited(char('['), one_of("xyXY"), char(']'))(s)?;
 
     match o {
         'X' | 'x' => Ok((rest, CutDirection::X)),
@@ -38,7 +36,11 @@ fn match_cutdirection(s: &str) -> IResult<&str, CutDirection> {
 }
 
 fn match_block(s: &str) -> IResult<&str, BlockId> {
-    separated_list1(tag("."), match_decimal)(s)
+    delimited(
+        char('['), 
+        separated_list1(tag("."), match_decimal),
+        char(']')
+    )(s)
         .map(|(rest, vd)| (rest, BlockId(vd)))
 }
 

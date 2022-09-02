@@ -34,31 +34,29 @@ pub enum ProgCmd {
 ///     BlockId(vec![a, b])
 /// }
 /// 
-/// fn test_sample () {
+/// let color = Color(0x04030201);
 /// 
-///     let color = Color(0x04030201);
-/// 
-///     let p_tree = vec![
-///         ProgCmd::Comment("Com".to_string()),
-///         ProgCmd::PointCut(BlockId(vec![1, 0, 2]), (1, 2)),
-///         ProgCmd::LineCut(b2(1, 0), CutDirection::X, 9),
-///         ProgCmd::LineCut(b2(1, 0), CutDirection::Y, 9),
-///         ProgCmd::Color(b2(1, 0), color),
-///         ProgCmd::Swap(b2(1, 0), b2(1, 0)),
-///         ProgCmd::Merge(b2(1, 0), b2(1, 0)),
-///     ];
-///     let p_source = 
+/// let p_tree = vec![
+///     ProgCmd::Comment("Com".to_string()),
+///     ProgCmd::PointCut(BlockId(vec![1, 0, 2]), (1, 2)),
+///     ProgCmd::LineCut(b2(1, 0), CutDirection::X, 9),
+///     ProgCmd::LineCut(b2(1, 0), CutDirection::Y, 9),
+///     ProgCmd::Color(b2(1, 0), color),
+///     ProgCmd::Swap(b2(1, 0), b2(1, 0)),
+///     ProgCmd::Merge(b2(1, 0), b2(1, 0)),
+/// ];
+/// let p_source = 
 /// "# Com
-/// cut 1.0.2 [1,2]
-/// cut 1.0 [x] 9
-/// cut 1.0 [y] 9
-/// color 1.0 [1,2,3,4]
-/// swap 1.0 1.0
-/// merge 1.0 1.0";
+/// cut [1.0.2] [1,2]
+/// cut [1.0] [x] 9
+/// cut [1.0] [y] 9
+/// color [1.0] [1,2,3,4]
+/// swap [1.0] [1.0]
+/// merge [1.0] [1.0]";
 /// 
-///     assert_eq!(tree_to_source(&p_tree), p_source);
-///     assert_eq!(source_to_tree(p_source), p_tree);
-/// }
+/// assert_eq!(tree_to_source(&p_tree), p_source);
+/// assert_eq!(source_to_tree(p_source), p_tree);
+/// 
 /// ```
 
 
