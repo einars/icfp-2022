@@ -4,12 +4,12 @@ pub mod unparse;
 pub mod parse;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct BlockId(Vec<u32>);
+pub struct BlockId(pub Vec<u32>);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Point {
-    x: u32,
-    y: u32
+    pub x: u32,
+    pub y: u32
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -19,7 +19,7 @@ pub enum Orientation {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Color(u32);
+pub struct Color(pub u32);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProgCmd {
@@ -33,10 +33,10 @@ pub enum ProgCmd {
 
 
 #[derive(Debug, PartialEq)]
-pub struct PainterImpl(Vec<ProgCmd>);
+pub struct PainterImpl(pub Vec<ProgCmd>);
 
 #[derive(Debug, PartialEq)]
-pub struct PainterRepr(String);
+pub struct PainterRepr(pub String);
 
 
 #[allow(dead_code)]
