@@ -13,9 +13,11 @@
 
 (defstruct pos x y)
 
-(defstruct shape p1 p2)
+(defparameter *zero* (make-pos :x 0 :y 0))
 
-(defstruct box shape color)
+(defstruct shape pos size)
+
+(defstruct box id shape color parent children)
 
 (defun make-color (r g b a)
   (vector r g b a))
@@ -55,8 +57,11 @@
 (defun make-empty-program ()
   nil)
 
+(defun full-canvas-shape ()
+  (make-shape :pos *zero* :size (make-pos :x *image-w* :y *image-h*)))
+
 (defun empty-shapes ()
-  nil)
+  (list (make-box :id '(0) :color *white* :shape (full-canvas-shape))))
 
 (defun save-color (out x y)
   (dotimes (i (1- +components+))
@@ -77,4 +82,5 @@
 	 (*target* (convert-image png))
 	 (*canvas* (empty-canvas))
 	 (*shapes* (empty-shapes)))
-    (save-canvas)))
+    (save-canvas)
+    (similarity)))
