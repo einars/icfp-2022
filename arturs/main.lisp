@@ -13,6 +13,18 @@
 
 (defstruct pos x y)
 
+(defun pos-add-x (p x)
+  (make-pos :x (+ (pos-x p) x) :y (pos-y p)))
+
+(defun pos-set-x (p x)
+  (make-pos :x x :y (pos-y p)))
+
+(defun pos-add-y (p y)
+  (make-pos :x (pos-x p) :y (+ (pos-y p) y)))
+
+(defun pos-set-y (p y)
+  (make-pos :x (pos-x p) :y y))
+
 (defparameter *zero* (make-pos :x 0 :y 0))
 
 (defstruct shape pos size)
@@ -96,8 +108,24 @@
       (find-box (rest id) (find-child id node))
       node))
 
-(defun lsplit (box axis num)
-  )
+(defun split-shape (shape num set add)
+  (let ((pos (shape-pos shape))
+	(size (shape-size shape)))
+    (list (make-shape :pos pos :size (funcall set size num))
+	  (make-shape :pos (funcall add pos num)
+		      :size (funcall add size (- num))))))
+
+(defun split-shape-x (shape x)
+  (split-shape shape x #'pos-set-x #'pos-add-x))
+
+(defun split-shape-y (shape y)
+  (split-shape shape y #'pos-set-y #'pos-add-y))
+
+(defun lsplit (parent axis num)
+  (let ((id -1) (parent-shape (box-shape parent)))
+    (mapcar (lambda (s) (make-box :id (incf id) :parent parent :shape s))
+	    (cond ((eq :x axis) (split-shape-x parent-shape num))
+		  ((eq :y axis) (split-shape-y parent-shape num))))))
 
 (defun lcut (id axis num)
   (let ((box (find-box id)))
