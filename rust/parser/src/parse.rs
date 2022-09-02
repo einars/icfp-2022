@@ -24,15 +24,15 @@ fn match_point(s: &str) -> IResult<&str, (u32, u32)> {
     let (rest, _) = char(']')(rest)?;
     Ok((rest, (x, y)))
 }
-fn match_orientation(s: &str) -> IResult<&str, Orientation> {
+fn match_cutdirection(s: &str) -> IResult<&str, CutDirection> {
     let rest = s;
     let (rest, _) = char('[')(rest)?;
     let (rest, o) = one_of("xyXY")(rest)?;
     let (rest, _) = char(']')(rest)?;
 
     match o {
-        'X' | 'x' => Ok((rest, Orientation::Horizontal)),
-        'Y' | 'y' => Ok((rest, Orientation::Vertical)),
+        'X' | 'x' => Ok((rest, CutDirection::X)),
+        'Y' | 'y' => Ok((rest, CutDirection::Y)),
         _ => panic!("should not happen")
     }
 }
@@ -90,7 +90,7 @@ fn cmd_linecut(s: &str) -> IResult<&str, ProgCmd> {
     let (rest, _) = many0(char(' '))(rest)?;
     let (rest, block) = match_block(rest)?;
     let (rest, _) = many0(char(' '))(rest)?;
-    let (rest, o) = match_orientation(rest)?;
+    let (rest, o) = match_cutdirection(rest)?;
     let (rest, _) = many0(char(' '))(rest)?;
     let (rest, decimal) = match_decimal(rest)?;
     Ok((rest, ProgCmd::LineCut(block, o, decimal)))

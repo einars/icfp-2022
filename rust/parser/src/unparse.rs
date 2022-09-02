@@ -19,11 +19,11 @@ impl fmt::Display for BlockId {
     }
 }
 
-impl fmt::Display for Orientation {
+impl fmt::Display for CutDirection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Orientation::Horizontal => write!(f, "[x]"),
-            Orientation::Vertical => write!(f, "[y]"),
+            CutDirection::X => write!(f, "[x]"),
+            CutDirection::Y => write!(f, "[y]"),
         }
     }
 }

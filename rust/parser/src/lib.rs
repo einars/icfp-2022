@@ -7,9 +7,9 @@ pub mod parse;
 pub struct BlockId(pub Vec<u32>);
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Orientation {
-    Vertical,
-    Horizontal
+pub enum CutDirection {
+    X,
+    Y
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -19,7 +19,7 @@ pub struct Color(pub u32);
 pub enum ProgCmd {
     Comment(String),
     PointCut(BlockId, (u32, u32)),
-    LineCut(BlockId, Orientation, u32),
+    LineCut(BlockId, CutDirection, u32),
     Color(BlockId, Color),
     Swap(BlockId, BlockId),
     Merge(BlockId, BlockId),
@@ -46,8 +46,8 @@ fn test_sample () {
     let p2_tree = PainterImpl(vec![
         ProgCmd::Comment("Com".to_string()),
         ProgCmd::PointCut(BlockId(vec![1, 0, 2]), (1, 2)),
-        ProgCmd::LineCut(b2(1, 0), Orientation::Horizontal, 9),
-        ProgCmd::LineCut(b2(1, 0), Orientation::Vertical, 9),
+        ProgCmd::LineCut(b2(1, 0), CutDirection::X, 9),
+        ProgCmd::LineCut(b2(1, 0), CutDirection::Y, 9),
         ProgCmd::Color(b2(1, 0), color),
         ProgCmd::Swap(b2(1, 0), b2(1, 0)),
         ProgCmd::Merge(b2(1, 0), b2(1, 0)),

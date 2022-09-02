@@ -1,3 +1,5 @@
+use parser::*;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Block {
     pub id: BlockId,
@@ -6,12 +8,6 @@ pub struct Block {
 }
 
 pub type BlockId = Vec<u32>;
-
-#[derive(Debug, Clone, Copy)]
-pub enum LineCutDirection {
-    X,
-    Y,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BlockError {
@@ -30,6 +26,7 @@ impl Block {
     ///
     /// ```
     /// use blocks::*;
+    /// use parser::*; // CutDirection
     ///
     /// let block = Block {
     ///     id: [0].to_vec(),
@@ -38,12 +35,12 @@ impl Block {
     /// };
     ///
     /// assert_eq!(
-    ///     block.clone().cut_line(LineCutDirection::X, 50),
+    ///     block.clone().cut_line(CutDirection::X, 50),
     ///     Err(BlockError::CoordOutOfBounds),
     /// );
     ///
     /// assert_eq!(
-    ///     block.clone().cut_line(LineCutDirection::X, 120),
+    ///     block.clone().cut_line(CutDirection::X, 120),
     ///     Ok([
     ///         Block{
     ///             id: [0, 0].to_vec(),
@@ -59,7 +56,7 @@ impl Block {
     /// );
     /// 
     /// assert_eq!(
-    ///     block.clone().cut_line(LineCutDirection::Y, 120),
+    ///     block.clone().cut_line(CutDirection::Y, 120),
     ///     Ok([
     ///         Block{
     ///             id: [0, 0].to_vec(),
@@ -74,10 +71,10 @@ impl Block {
     ///     ].to_vec())
     /// );    
     /// ```
-    pub fn cut_line(self, direction: LineCutDirection, at: u32) -> Result<Vec<Block>, BlockError> {
+    pub fn cut_line(self, direction: CutDirection, at: u32) -> Result<Vec<Block>, BlockError> {
         match direction {
-            LineCutDirection::X => check_bound_1(self.pos.0, self.size.0, at),
-            LineCutDirection::Y => check_bound_1(self.pos.1, self.size.1, at),
+            CutDirection::X => check_bound_1(self.pos.0, self.size.0, at),
+            CutDirection::Y => check_bound_1(self.pos.1, self.size.1, at),
         }?;
 
         Ok(vec![
@@ -85,19 +82,19 @@ impl Block {
                 id: self.sub_id(0),
                 pos: self.pos,
                 size: match direction {
-                    LineCutDirection::X => (at - self.pos.0, self.size.1),
-                    LineCutDirection::Y => (self.size.0, at - self.pos.1),
+                    CutDirection::X => (at - self.pos.0, self.size.1),
+                    CutDirection::Y => (self.size.0, at - self.pos.1),
                 },
             },
             Block {
                 id: self.sub_id(1),
                 pos: match direction {
-                    LineCutDirection::X => (at, self.pos.1),
-                    LineCutDirection::Y => (self.pos.0, at),
+                    CutDirection::X => (at, self.pos.1),
+                    CutDirection::Y => (self.pos.0, at),
                 },
                 size: match direction {
-                    LineCutDirection::X => (self.pos.0 + self.size.0 - at, self.size.1),
-                    LineCutDirection::Y => (self.size.0, self.pos.1 + self.size.1 - at),
+                    CutDirection::X => (self.pos.0 + self.size.0 - at, self.size.1),
+                    CutDirection::Y => (self.size.0, self.pos.1 + self.size.1 - at),
                 },
             },
         ])
