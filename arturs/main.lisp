@@ -26,6 +26,10 @@
 (defun pos-set-y (p y)
   (make-pos :x (pos-x p) :y y))
 
+(defun pos-eq (p1 p2)
+  (and (= (pos-x p1) (pos-x p2))
+       (= (pos-y p1) (pos-y p2))))
+
 (defun surface (p)
   (* (pos-x p) (pos-y p)))
 
@@ -46,6 +50,9 @@
   (pos-y (shape-size s)))
 
 (defstruct box id shape color parent children)
+
+(defun box-size (box)
+  (shape-size (box-shape box)))
 
 (defun make-color (r g b a)
   (vector r g b a))
@@ -169,12 +176,38 @@
 	(ty (- *image-w* (+ (shape-y shape) y 1))))
     (setf (aref *canvas* tx ty) color)))
 
+(defun get-pixel (shape x y)
+  (let ((tx (+ (shape-x shape) x))
+	(ty (- *image-w* (+ (shape-y shape) y 1))))
+    (aref *canvas* tx ty)))
+
 (defun color (box color)
   (let* ((shape (box-shape box)))
     (push `(:color ,box ,color) *program*)
     (dotimes (y (shape-h shape))
       (dotimes (x (shape-w shape))
 	(set-pixel shape x y color)))))
+
+(defun replace-in-parent (box1 box2)
+  (nsubstitute box2 box1 (box-children (box-parent box1))))
+
+(defun swap-pixels (box1 box2)
+  (let ((shape1 (box-shape box1))
+	(shape2 (box-shape box2)))
+    (dotimes (y (shape-h shape1))
+      (dotimes (x (shape-w shape1))
+	(let ((color1 (get-pixel shape1 x y))
+	      (color2 (get-pixel shape2 x y)))
+	  (set-pixel shape1 x y color2)
+	  (set-pixel shape2 x y color1))))))
+
+(defun swap (box1 box2)
+  (when (not (pos-eq (box-size box1) (box-size box2)))
+    (error "box sizes for swap is not equal"))
+  (push `(:swap ,box1 ,box2) *program*)
+  (replace-in-parent box1 box2)
+  (replace-in-parent box2 box1)
+  (swap-pixels box1 box2))
 
 (defun format-id (box)
   (format nil "~{~A~^.~}" (box-to-id box)))
