@@ -15,14 +15,14 @@ fn match_decimal(s: &str) -> IResult<&str, u32> {
         .map(|(rest, s)| (rest, s.parse::<u32>().unwrap()))
 }
 
-fn match_point(s: &str) -> IResult<&str, Point> {
+fn match_point(s: &str) -> IResult<&str, (u32, u32)> {
     let rest = s;
     let (rest, _) = char('[')(rest)?;
     let (rest, x) = match_decimal(rest)?;
     let (rest, _) = char(',')(rest)?;
     let (rest, y) = match_decimal(rest)?;
     let (rest, _) = char(']')(rest)?;
-    Ok((rest, Point{ x, y }))
+    Ok((rest, (x, y)))
 }
 fn match_orientation(s: &str) -> IResult<&str, Orientation> {
     let rest = s;

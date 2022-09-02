@@ -7,12 +7,6 @@ pub mod parse;
 pub struct BlockId(pub Vec<u32>);
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Point {
-    pub x: u32,
-    pub y: u32
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub enum Orientation {
     Vertical,
     Horizontal
@@ -24,7 +18,7 @@ pub struct Color(pub u32);
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProgCmd {
     Comment(String),
-    PointCut(BlockId, Point),
+    PointCut(BlockId, (u32, u32)),
     LineCut(BlockId, Orientation, u32),
     Color(BlockId, Color),
     Swap(BlockId, BlockId),
@@ -46,13 +40,12 @@ fn b2(a:u32, b:u32) -> BlockId {
 
 #[test]
 fn test_sample () {
-    let point = Point{ x: 1, y: 2 };
 
     let color = Color(0x04030201);
 
     let p2_tree = PainterImpl(vec![
         ProgCmd::Comment("Com".to_string()),
-        ProgCmd::PointCut(BlockId(vec![1, 0, 2]), point),
+        ProgCmd::PointCut(BlockId(vec![1, 0, 2]), (1, 2)),
         ProgCmd::LineCut(b2(1, 0), Orientation::Horizontal, 9),
         ProgCmd::LineCut(b2(1, 0), Orientation::Vertical, 9),
         ProgCmd::Color(b2(1, 0), color),

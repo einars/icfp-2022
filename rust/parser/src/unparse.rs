@@ -19,12 +19,6 @@ impl fmt::Display for BlockId {
     }
 }
 
-impl fmt::Display for Point {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{},{}]", self.x, self.y)
-    }
-}
-
 impl fmt::Display for Orientation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -48,7 +42,7 @@ impl fmt::Display for ProgCmd {
 
         match self {
             ProgCmd::Comment(s)       => write!(f, "# {}", s),
-            ProgCmd::PointCut(b, p)   => write!(f, "cut {} {}", b, p),
+            ProgCmd::PointCut(b, p)   => write!(f, "cut {} [{},{}]", b, p.0, p.1),
             ProgCmd::LineCut(b, o, n) => write!(f, "cut {} {} {}", b, o, n),
             ProgCmd::Color(b, c)      => write!(f, "color {} {}", b, c),
             ProgCmd::Swap(ba, bb)     => write!(f, "swap {} {}", ba, bb),
