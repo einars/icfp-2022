@@ -50,7 +50,7 @@ fn test_sample () {
 
     let color = Color(0x04030201);
 
-    let p2 = PainterImpl(vec![
+    let p2_tree = PainterImpl(vec![
         ProgCmd::Comment("Com".to_string()),
         ProgCmd::PointCut(BlockId(vec![1, 0, 2]), point),
         ProgCmd::LineCut(b2(1, 0), Orientation::Horizontal, 9),
@@ -59,7 +59,7 @@ fn test_sample () {
         ProgCmd::Swap(b2(1, 0), b2(1, 0)),
         ProgCmd::Merge(b2(1, 0), b2(1, 0)),
     ]);
-    let p2_expected = 
+    let p2_source = 
 "# Com
 cut 1.0.2 [1,2]
 cut 1.0 [x] 9
@@ -68,11 +68,11 @@ color 1.0 [1,2,3,4]
 swap 1.0 1.0
 merge 1.0 1.0";
 
-    let p2_actual: PainterRepr = (&p2).into();
+    let p2_tree_to_source: PainterRepr = (&p2_tree).into();
 
-    assert_eq!(p2_actual.0, p2_expected);
+    assert_eq!(p2_tree_to_source.0, p2_source);
 
-    let p2_re: PainterImpl = (&p2_actual).into();
+    let p2_source_to_tree: PainterImpl = (p2_source).into();
 
-    assert_eq!(p2_re, p2);
+    assert_eq!(p2_source_to_tree, p2_tree);
 }
