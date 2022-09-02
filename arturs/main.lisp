@@ -6,7 +6,6 @@
 (defvar *canvas* nil)
 
 (defvar *program* nil)
-(defvar *cost* 0)
 
 (defvar *image-w* 0)
 (defvar *image-h* 0)
@@ -14,10 +13,10 @@
 (defun make-color (r g b a)
   (vector r g b a))
 
-(defparameter *black* (make-color 0 0 0 0))
+(defparameter *white* (make-color 255 255 255 255))
 
 (defun empty-canvas ()
-  (make-array (list *image-w* *image-h*) :initial-element *black*))
+  (make-array (list *image-w* *image-h*) :initial-element *white*))
 
 (defun get-color (data x y)
   (let ((color nil))
@@ -55,6 +54,5 @@
 	 (*image-w* (png-read:width png))
 	 (*image-h* (png-read:height png))
 	 (*target* (convert-image png))
-	 (*canvas* (empty-canvas))
-	 (*cost* 0))
+	 (*canvas* (empty-canvas)))
     (format t "~A~%" (similarity))))
