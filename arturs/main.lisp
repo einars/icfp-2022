@@ -43,14 +43,14 @@
   (expt (- (aref c1 i) (aref c2 i)) 2))
 
 (defun similarity (&optional (p1 *target*) (p2 *canvas*))
-  (let ((score 0.0))
+  (let ((score 0.0d0))
     (dotimes (y *image-h*)
       (dotimes (x *image-w*)
-	(let ((sum 0.0))
+	(let ((sum 0.0d0))
 	  (dotimes (i +components+)
 	    (incf sum (component-distance (aref p1 x y) (aref p2 x y) i)))
 	  (incf score (sqrt sum)))))
-    (* 0.005 score)))
+    (round (* 0.005 score))))
 
 (defun make-empty-program ()
   nil)
