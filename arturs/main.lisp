@@ -155,7 +155,8 @@
   (let ((box (find-box id)))
     (when (consp (box-children box)) (error "box already have children"))
     (setf (box-children box) (lsplit box axis num))
-    (push `(:lcut ,id ,axis ,num) *program*)))
+    (push `(:lcut ,id ,axis ,num) *program*)
+    (box-children box)))
 
 (defun set-pixel (shape x y color)
   (let ((tx (+ (shape-x shape) x))
@@ -169,6 +170,14 @@
     (dotimes (y (shape-h shape))
       (dotimes (x (shape-w shape))
 	(set-pixel shape x y color)))))
+
+(defun box-to-id-reverse (box)
+  (if (not (null box))
+      (cons (box-id box) (box-to-id-reverse (box-parent box)))
+      nil))
+
+(defun box-to-id (box)
+  (nreverse (box-to-id-reverse box)))
 
 (defun format-id (id)
   (format nil "~{~A~^.~}" id))
@@ -196,11 +205,21 @@
   (with-open-file (out "result.txt" :direction :output :if-exists :supersede)
     (mapc (lambda (cmd) (save-command out cmd)) (nreverse *program*))))
 
+(defun slice-vertical-problem-1 (n id)
+  (when (> n 0)
+    (let* ((children (lcut id 'y 40))
+	   (c0 (first children))
+	   (c1 (second children)))
+      (when (oddp n)
+	(color (box-to-id c0) *white*))
+      (slice-vertical-problem-1 (1- n) (box-to-id c1)))))
+
 (defun run-test-program-problem-1 ()
   (color '(0) (make-color 0 74 173 255))
   (lcut '(0) 'x 357)
   (lcut '(0 0) 'y 43)
-  (color '(0 0 1) (make-color 128 128 128 255)))
+  (color '(0 0 1) (make-color 0 0 0 255))
+  (slice-vertical-problem-1 8 '(0 0 1)))
 
 (defun painter (file)
   (let* ((png (png-read:read-png-file file))
