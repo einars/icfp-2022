@@ -244,8 +244,17 @@
     (mapcar (lambda (shape) (make-child (incf id) parent shape))
 	    (split-shape-4 parent-shape x y))))
 
+(defun lcut-sanity-check (box axis num)
+  (let ((p (box-pos box))
+	(s (box-shape box)))
+    (cond
+      ((eq axis 'x) (and (< (pos-x p) num (1- (+ (pos-x p) (shape-w s))))))
+      ((eq axis 'y) (and (< (pos-y p) num (1- (+ (pos-x p) (shape-w s))))))
+      (t nil))))
+
 (defun lcut (box axis num)
   (when (consp (box-children box)) (error "box already have children"))
+  (when (not (lcut-sanity-check box axis num)) (error "bad lcut num"))
   (setf (box-children box) (l-split box axis num))
   (push `(:lcut ,box ,axis ,num) *program*)
   (box-children box))
@@ -415,7 +424,7 @@
   (elt l (random (length l))))
 
 (defun random-jerk (num)
-  (+ num (* (1+ (random 10)) (- (* 2 (random 2)) 1))))
+  (+ num (* (1+ (random 100)) (- (* 2 (random 2)) 1))))
 
 (defun mutate-number (victim)
   (setf (first victim) (random-jerk (first victim))))
@@ -484,14 +493,21 @@
       (push (list (score) program) pool))
     pool))
 
+(defun execute-program-safe (x)
+  (handler-case (execute-program x)
+    (condition (var)
+      (declare (ignore var))
+      (list most-positive-fixnum nil))))
+
 (defun execute-contestant (x)
-  (execute-program (new-mutation (second x))))
+  (execute-program-safe (new-mutation (second x))))
 
 (defun optimize-program (program)
   (let ((*best* most-positive-fixnum)
 	(pool (create-program-pool program)))
     (loop (setf pool (sort pool #'> :key #'first))
 	  (dotimes (i +half-pool+)
+	    (setf (elt pool i) (copy-list (elt pool (+ i +half-pool+))))
 	    (let ((done (execute-contestant (elt pool i))))
 	      (setf (elt pool i) done))))))
 
