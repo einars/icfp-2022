@@ -1,14 +1,17 @@
 #!/bin/bash
-api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkbXVuZHMuY2Vyc0BnbWFpbC5jb20iLCJleHAiOjE2NjIyMDg3NjgsIm9yaWdfaWF0IjoxNjYyMTIyMzY4fQ.e7E0QO-ka2Sje8PxU2F8WU75K8ih1MUEj-oopXPZqF4
 
-for f in $(seq 21 25); do
+set -e
+
+api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkbXVuZHMuY2Vyc0BnbWFpbC5jb20iLCJleHAiOjE2NjIyODczODcsIm9yaWdfaWF0IjoxNjYyMjAwOTg3fQ.3l66kH5WtEcVAuiGeQDVfxSnLFhMLstV419W4YebohA
+
+for f in $(seq 1 20); do
   file=$(dirname $0)/../../problems/$f.png
   echo "# $file" | tee submission.isl
   cargo run --quiet -- $file | tee -a submission.isl
   echo
 
   curl "https://robovinci.xyz/api/submissions/$f/create" \
-      -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkbXVuZHMuY2Vyc0BnbWFpbC5jb20iLCJleHAiOjE2NjIyMDg3NjgsIm9yaWdfaWF0IjoxNjYyMTIyMzY4fQ.e7E0QO-ka2Sje8PxU2F8WU75K8ih1MUEj-oopXPZqF4'\
+      -H "Authorization: Bearer $api_key"\
       -F file=@submission.isl
 done
 
