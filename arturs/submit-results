@@ -1,0 +1,11 @@
+#!/bin/bash
+
+for f in result/*.txt; do
+  echo $f
+  ./submit-result $(echo $f | sed -e 's/[^0-9]//g')
+  echo
+done
+
+sleep 5
+cd ../problems/scripts
+make
