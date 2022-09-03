@@ -5,6 +5,7 @@ use egui::{Color32, Painter, Rgba, TextEdit};
 use egui_extras::RetainedImage;
 use parser::{BlockId, CutDirection, ProgCmd};
 
+
 pub struct TemplateApp<'a> {
     action: Action,
     color: [u8; 4],
@@ -32,6 +33,7 @@ enum Action {
     Swap,
     Merge,
     Color,
+    AvgColor,
 }
 
 impl<'a> TemplateApp<'a> {
@@ -105,6 +107,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 ui.radio_value(action, Action::CutVert, "Cut Vertically (v)");
                 ui.radio_value(action, Action::CutPoint, "Cut Point (p)");
                 ui.radio_value(action, Action::Color, "Color (c)");
+                ui.radio_value(action, Action::AvgColor, "AvgColor (a)");
                 ui.radio_value(action, Action::Swap, "Swap (s)");
                 ui.radio_value(action, Action::Merge, "Merge (m)");
 
@@ -119,6 +122,9 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 }
                 if ctx.input().key_pressed(egui::Key::C) {
                     *action = Action::Color
+                }
+                if ctx.input().key_pressed(egui::Key::A) {
+                    *action = Action::AvgColor
                 }
                 if ctx.input().key_pressed(egui::Key::S) {
                     *action = Action::Swap
@@ -321,6 +327,20 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     )
                 }
 
+                if *action == Action::AvgColor {
+                    if ctx.input().pointer.primary_clicked() {
+                        if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                            if let Ok(block) = current.get_block(&id) {
+                                let color = calc_avgcolor(&block, target);
+                                let cmd = ProgCmd::Color(id, color);
+                                current.apply_cmd(&cmd).unwrap();
+                                cmd_history.push(cmd.clone());
+                                *code = parser::tree_to_source(cmd_history);
+                                *code_error = "".to_string();
+                            }
+                        }
+                    }
+                }
                 if *action == Action::Color {
                     if ctx.input().modifiers.ctrl {
                         if ctx.input().pointer.primary_clicked() {
@@ -449,3 +469,28 @@ fn pos_to_block(cr: &egui::Rect, pos: egui::Pos2, painting: &Painting) -> Option
         std::cmp::max(painting.size.1 - (pos.y - cr.min.y) as u32, 1) - 1,
     ))
 }
+
+fn calc_avgcolor(b: &Block, i: &image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) -> parser::Color {
+    let mut sr: usize = 0;
+    let mut sg: usize = 0;
+    let mut sb: usize = 0;
+    let mut sa: usize = 0;
+    for x in 0..b.size.0 - 1 {
+        for y in 0..b.size.1 - 1 {
+            let pixel = i.get_pixel(b.pos.0 + x, 399 - (b.pos.1 + y));
+            sr += pixel.0[0] as usize;
+            sg += pixel.0[1] as usize;
+            sb += pixel.0[2] as usize;
+            sa += pixel.0[3] as usize;
+        }
+    }
+
+    let area = (b.size.0 * b.size.1) as usize;
+    parser::Color([
+        (sr / area) as u8,
+        (sg / area) as u8,
+        (sb / area) as u8,
+        (sa / area) as u8,
+    ])
+}
+
