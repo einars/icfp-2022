@@ -31,13 +31,21 @@
   (and (= (pos-x p1) (pos-x p2))
        (= (pos-y p1) (pos-y p2))))
 
+(defun pos-fn (p1 p2 fn)
+  (make-pos :x (funcall fn (pos-x p1) (pos-x p2))
+	    :y (funcall fn (pos-y p1) (pos-y p2))))
+
+(defun pos-min (p1 p2)
+  (pos-fn p1 p2 #'min))
+
+(defun pos-max (p1 p2)
+  (pos-fn p1 p2 #'max))
+
 (defun pos-sub (p1 p2)
-  (make-pos :x (- (pos-x p1) (pos-x p2))
-	    :y (- (pos-y p1) (pos-y p2))))
+  (pos-fn p1 p2 #'-))
 
 (defun pos-add (p1 p2)
-  (make-pos :x (+ (pos-x p1) (pos-x p2))
-	    :y (+ (pos-y p1) (pos-y p2))))
+  (pos-fn p1 p2 #'+))
 
 (defun surface (p)
   (* (pos-x p) (pos-y p)))
@@ -72,6 +80,9 @@
 
 (defun box-size (box)
   (shape-size (box-shape box)))
+
+(defun box-surface (box)
+  (surface (box-size box)))
 
 (defun make-color (r g b a)
   (vector r g b a))
@@ -234,8 +245,9 @@
     (mapc (lambda (c) (displace-box c diff)) (box-children box))))
 
 (defun replace-parent (box1 box2 diff new-parent)
-  (nsubstitute box2 box1 (box-children new-parent))
-  (setf (box-parent box2) new-parent)
+  (when new-parent
+    (nsubstitute box2 box1 (box-children new-parent))
+    (setf (box-parent box2) new-parent))
   (displace-box box2 diff))
 
 (defun swap-pixels (box1 box2)
@@ -259,6 +271,38 @@
     (replace-parent box1 box2 diff1 parent1)
     (replace-parent box2 box1 diff2 parent2))
   (swap-pixels box1 box2))
+
+(defun register-merge-cmd (box1 box2)
+  (push (if (> (box-surface box1)
+	       (box-surface box2))
+	    `(:merge ,box1 ,box2)
+	    `(:merge ,box2 ,box1))
+	*program*))
+
+(defun remove-from-parent (box)
+  (let ((parent (box-parent box)))
+    (setf (box-children parent) (delete box (box-children parent)))))
+
+(defun merge-shape (shape1 shape2)
+  (let* ((pos (pos-min (shape-pos shape1) (shape-pos shape2)))
+	 (corner1 (pos-add (shape-pos shape1) (shape-size shape1)))
+	 (corner2 (pos-add (shape-pos shape2) (shape-size shape2)))
+	 (top (pos-max corner1 corner2)))
+    (make-shape :pos pos :size (pos-sub top pos))))
+
+(defun merge-box (box1 box2)
+  (make-box
+   :id (list (incf *boxnum*))
+   :shape (merge-shape (box-shape box1) (box-shape box2))))
+
+(defun box-merge (box1 box2)
+  (when (not (is-good-merge box1 box2))
+    (error "boxes for merge are not good"))
+  (register-merge-cmd box1 box2)
+  (remove-from-parent box1)
+  (remove-from-parent box2)
+  (push (merge-box box1 box2)
+	(box-children *allbox*)))
 
 (defun format-id (box)
   (format nil "~{~A~^.~}" (box-id box)))
