@@ -1,7 +1,7 @@
 (ql:quickload "png-read")
 
 (defconstant +components+ 4)
-(defconstant +half-pool+ 5)
+(defconstant +half-pool+ 2)
 
 (defvar *target* nil)
 (defvar *canvas* nil)
@@ -415,7 +415,7 @@
   (elt l (random (length l))))
 
 (defun random-jerk (num)
-  (+ num 1 (* -2 (random 2))))
+  (+ num (* (1+ (random 10)) (- (* 2 (random 2)) 1))))
 
 (defun mutate-number (victim)
   (setf (first victim) (random-jerk (first victim))))
