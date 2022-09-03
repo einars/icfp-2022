@@ -15,6 +15,10 @@
 
 use std::fs::File;
 
+use parser::*;
+use blocks::painting::{Painting, PaintError};
+use blocks::Block;
+
 type Rgb = [u8; 4];
 
 fn compare_rgb(a: Rgb, b: Rgb) -> f64 {
@@ -81,4 +85,70 @@ fn compare_against_white() {
     let ia = pngread("./test.png");
     let ib = gen_white();
     assert_eq!(compare(&ia, &ib), 135112);
+}
+
+fn get_block_size(b: &Block) -> u32
+{
+    b.size.0 * b.size.1
+}
+
+pub fn calc_cmd_score(cmd: &ProgCmd, p: &Painting) -> Result<u32, PaintError> {
+    let base_cost;
+    let canvas_size = 400 * 400;
+    let mut block_size = 0;
+    match cmd {
+
+        ProgCmd::LineCut(block_id, _, _) => {
+            base_cost = 7;
+            block_size = get_block_size(p.get_block(block_id)?);
+        },
+
+        ProgCmd::PointCut(block_id, _) => {
+            base_cost = 10;
+            block_size = get_block_size(p.get_block(block_id)?);
+        },
+
+        ProgCmd::Color(block_id, _) => {
+            base_cost = 5;
+            block_size = get_block_size(p.get_block(block_id)?);
+        },
+
+        ProgCmd::Swap(block_id_1, _block_id_2) => {
+            base_cost = 3;
+            block_size = get_block_size(p.get_block(block_id_1)?);
+        },
+
+        ProgCmd::Merge(block_id_1, block_id_2) => {
+            base_cost = 1;
+            let bs1 = get_block_size(p.get_block(block_id_1)?);
+            let bs2 = get_block_size(p.get_block(block_id_2)?);
+            block_size = if bs1 > bs2 { bs1 } else { bs2 };
+        },
+
+        ProgCmd::Comment(_) => {
+            base_cost = 0
+        },
+    }
+
+    let cost = base_cost * canvas_size / block_size;
+    // eprintln!("{} * {} / {} = {}", base_cost, canvas_size, block_size, cost);
+    Ok(cost)
+}
+
+#[test]
+pub fn test_cmd_scores()
+{
+    let mut pt = Painting::new((400, 400));
+    let initial_cut = ProgCmd::LineCut(BlockId(vec![0]), CutDirection::X, 200);
+    pt.apply_cmd(&initial_cut).expect("Cut was unsuccessful");
+
+    let blk_fst = BlockId(vec![0, 0]);
+    let _blk_snd = BlockId(vec![0, 1]);
+
+    // 200x400 -> 200x200
+    assert_eq!(
+        calc_cmd_score(&ProgCmd::LineCut(blk_fst, CutDirection::X, 200), &pt).unwrap(),
+        (7 * 400 * 400 / (200 * 400))
+    );
+
 }

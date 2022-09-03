@@ -267,6 +267,8 @@ dependencies = [
 name = "compadre"
 version = "0.1.0"
 dependencies = [
+ "blocks",
+ "parser",
  "png",
 ]
 
