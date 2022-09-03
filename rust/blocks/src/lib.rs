@@ -1,15 +1,17 @@
-//! Use the `Block` struct to create and manipulate blocks
+//! Use the `Block` struct to create and manipulate blocks.
+//! Use the `Painting` struct to hold and update an entire painting.
 
 use parser::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+pub mod painting;
+pub use painting::Painting;
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     pub id: BlockId,
     pub pos: (u32, u32),
     pub size: (u32, u32),
 }
-
-pub type BlockId = Vec<u32>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BlockError {
@@ -73,13 +75,13 @@ impl Block {
     ///     ].to_vec())
     /// );    
     /// ```
-    pub fn cut_line(self, direction: CutDirection, at: u32) -> Result<Vec<Block>, BlockError> {
+    pub fn cut_line(self, direction: CutDirection, at: u32) -> Result<[Block; 2], BlockError> {
         match direction {
             CutDirection::X => check_bound_1(self.pos.0, self.size.0, at),
             CutDirection::Y => check_bound_1(self.pos.1, self.size.1, at),
         }?;
 
-        Ok(vec![
+        Ok([
             Block {
                 id: self.sub_id(0),
                 pos: self.pos,
@@ -145,11 +147,11 @@ impl Block {
     ///     ].to_vec())
     /// );
     /// ```
-    pub fn cut_point(self, at: (u32, u32)) -> Result<Vec<Block>, BlockError> {
+    pub fn cut_point(self, at: (u32, u32)) -> Result<[Block; 4], BlockError> {
         check_bound_1(self.pos.0, self.size.0, at.0)?;
         check_bound_1(self.pos.1, self.size.1, at.1)?;
 
-        Ok(vec![
+        Ok([
             Block {
                 id: self.sub_id(0),
                 pos: self.pos,
@@ -203,7 +205,7 @@ impl Block {
     pub fn merge(&mut self, other: Block, new_id: u32) -> Result<(), BlockError> {
         self.is_adjacent(&other)?;
 
-        self.id = vec![new_id];
+        self.id = BlockId(vec![new_id]);
         if self.pos.0 == other.pos.0 { // matching x-es
             self.pos = (self.pos.0, std::cmp::min(self.pos.1, other.pos.1));
             self.size = (self.size.0, self.size.1 + other.size.1);
@@ -216,9 +218,10 @@ impl Block {
     }
 
     fn sub_id(&self, id: u32) -> BlockId {
-        let mut new_id = self.id.clone();
+        let mut wrapped_id = self.id.clone();
+        let BlockId(ref mut new_id) = wrapped_id;
         new_id.push(id);
-        new_id
+        wrapped_id
     }
 
     fn is_adjacent(&self, other: &Block) -> Result<(), BlockError> {
@@ -280,28 +283,28 @@ mod tests {
     #[test]
     fn test_swap() {
         let mut block1 = Block {
-            id: [0].to_vec(),
+            id: BlockId([0].to_vec()),
             pos: (0, 0),
             size: (0, 0),
         };
         let mut block2 = Block {
-            id: [1].to_vec(),
+            id: BlockId([1].to_vec()),
             pos: (0, 0),
             size: (0, 0),
         };
 
         block1.swap(&mut block2);
-        assert_eq!(block1.id, [1].to_vec());
-        assert_eq!(block2.id, [0].to_vec());
+        assert_eq!(block1.id, BlockId([1].to_vec()));
+        assert_eq!(block2.id, BlockId([0].to_vec()));
     }
 
     #[test]
     fn test_is_adjacent() {
-        let block = Block { id: [0].to_vec(), pos: (100, 100), size: (40, 60)};
-        let block_n = Block { id: [0].to_vec(), pos: (100, 160), size: (40, 30)};
-        let block_e = Block { id: [0].to_vec(), pos: (140, 100), size: (20, 60)};
-        let block_s = Block { id: [0].to_vec(), pos: (100, 80), size: (40, 20)};
-        let block_w = Block { id: [0].to_vec(), pos: (50, 100), size: (50, 60)};
+        let block = Block { id: BlockId([0].to_vec()), pos: (100, 100), size: (40, 60)};
+        let block_n = Block { id: BlockId([0].to_vec()), pos: (100, 160), size: (40, 30)};
+        let block_e = Block { id: BlockId([0].to_vec()), pos: (140, 100), size: (20, 60)};
+        let block_s = Block { id: BlockId([0].to_vec()), pos: (100, 80), size: (40, 20)};
+        let block_w = Block { id: BlockId([0].to_vec()), pos: (50, 100), size: (50, 60)};
 
         assert_eq!(block.is_adjacent(&block_n), Ok(()));
         assert_eq!(block.is_adjacent(&block_e), Ok(()));
