@@ -346,18 +346,20 @@ impl<'a> eframe::App for TemplateApp<'a> {
                         *origin_block = Some(id);
                     }
 
+                    let size = current.size;
                     if let Some(id1) = origin_block {
                         if let Ok(block) = current.get_block(id1) {
+                            let block = block.clone();
                             if ctx.input().modifiers.ctrl {
                                 if let Some(id2) = pos_to_block(&canvas.rect, pos, current) {
                                     let block2 = current.get_block(&id2).unwrap();
-                                    if *block != *block2 && block.is_adjacent(block2).is_ok() {
-                                        paint.rect_stroke(block_rect(block2, current.size, &canvas.rect), 0.0, (2.0, Color32::BLUE));
+                                    if block != *block2 && block.is_adjacent(block2).is_ok() {
+                                        paint.rect_stroke(block_rect(block2, size, &canvas.rect), 0.0, (2.0, Color32::BLUE));
                                         dispatch_cmd!(id, ProgCmd::Merge(id, id1.clone()), {})
                                     }                                    
                                 }                                                                
                             }
-                            paint.rect_stroke(block_rect(block, current.size, &canvas.rect), 0.0, (2.0, Color32::BLUE));
+                            paint.rect_stroke(block_rect(&block, size, &canvas.rect), 0.0, (2.0, Color32::BLUE));
                         }
                     }
                     
