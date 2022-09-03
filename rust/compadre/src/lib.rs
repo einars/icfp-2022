@@ -17,23 +17,23 @@ use std::fs::File;
 
 type Rgb = [u8;4];
 
-fn compare_rgb(a: Rgb, b:Rgb) -> u32 {
+fn compare_rgb(a: Rgb, b:Rgb) -> f64 {
 
     let a0:i32 = (a[0] as i32) - (b[0] as i32);
     let a1:i32 = (a[1] as i32) - (b[1] as i32);
     let a2:i32 = (a[2] as i32) - (b[2] as i32);
     let a3:i32 = (a[3] as i32) - (b[3] as i32);
 
-    ((a0.pow(2) + a1.pow(2) + a2.pow(2) + a3.pow(2)) as f64).sqrt() as u32
+    ((a0.pow(2) + a1.pow(2) + a2.pow(2) + a3.pow(2)) as f64).sqrt()
 
 }
 
 pub fn compare(first: &[u8], second: &[u8]) -> u32
 {
-    let mut delta: u32 = 0;
-    for x in 0..399 {
-        for y in 0..399 {
-            let ptr = ((399 - y) * 400 + x) * 4;
+    let mut delta: f64 = 0.0;
+    for x in 0..400 {
+        for y in 0..400 {
+            let ptr = (y * 400 + x) * 4;
             let col1: Rgb = [
                 first[ptr + 0],
                 first[ptr + 1],
@@ -50,7 +50,7 @@ pub fn compare(first: &[u8], second: &[u8]) -> u32
         }
     }
 
-    ((delta as f64) * 0.005).round() as u32
+    (delta * 0.005).round() as u32
 
 }
 
@@ -72,3 +72,20 @@ pub fn pngread(file_name: &str) -> Vec<u8>
     buf
 }
 
+pub fn gen_white() -> Vec<u8>
+{
+    let mut v = Vec::new();
+    v.resize(640000, 255);
+    v
+
+}
+
+
+#[test]
+fn compare_against_white () {
+    let ia = pngread("./test.png");
+    let ib = gen_white();
+    assert_eq!(compare(&ia, &ib), 135112);
+
+
+}
