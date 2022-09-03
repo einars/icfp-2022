@@ -16,7 +16,13 @@
 (defvar *pnm* "canvas.pnm")
 (defvar *txt* "result.txt")
 
-(defstruct pos x y)
+(declaim (ftype function print-pos))
+(defstruct (pos (:print-function (lambda (b s d) (print-pos b s d))))
+  x y)
+
+(defun print-pos (b s d)
+  (declare (ignore d))
+  (format s "<P:~A,~A>" (pos-x b) (pos-y b)))
 
 (defun pos-add-x (p x)
   (make-pos :x (+ (pos-x p) x) :y (pos-y p)))
@@ -55,7 +61,14 @@
 
 (defparameter *zero* (make-pos :x 0 :y 0))
 
-(defstruct shape pos size)
+(declaim (ftype function print-shape))
+(defstruct (shape (:print-function (lambda (b s d) (print-shape b s d))))
+  pos size)
+
+(defun print-shape (b s d)
+  (declare (ignore d))
+  (format s "<SHAPE POS:~A SIZE:~A>"
+	  (shape-pos b) (shape-size b)))
 
 (defun shape-x (s)
   (pos-x (shape-pos s)))
@@ -73,7 +86,14 @@
   (and (<= 0 (- (pos-x p) (shape-x s)) (1- (shape-w s)))
        (<= 0 (- (pos-y p) (shape-y s)) (1- (shape-h s)))))
 
-(defstruct box id shape color parent children)
+(declaim (ftype function print-box))
+(defstruct (box (:print-function (lambda (b s d) (print-box b s d))))
+  id shape color parent children)
+
+(defun print-box (b s d)
+  (declare (ignore d))
+  (format s "<BOX ID:~A CHILDREN:~A ~A>"
+	  (box-id b) (length (box-children b)) (box-shape b)))
 
 (defun box-pos (box)
   (shape-pos (box-shape box)))
