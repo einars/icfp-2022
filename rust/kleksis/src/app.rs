@@ -17,6 +17,9 @@ pub struct TemplateApp {
 
     next_cmd: Option<ProgCmd>,
     next: Painting,
+
+    code: String,
+    code_error: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -50,6 +53,8 @@ impl TemplateApp {
             cmd_history: vec![],
             next_cmd: None,
             next: Painting::new(size),
+            code: "".to_string(),
+            code_error: "".to_string(),
         }
     }
 }
@@ -66,6 +71,8 @@ impl eframe::App for TemplateApp {
             cmd_history,
             next_cmd,
             next,
+            code,
+            code_error,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -162,8 +169,30 @@ impl eframe::App for TemplateApp {
 
                 ui.heading("Program");
                 egui::ScrollArea::vertical().show(ui, |ui| {
-                    let mut buffer: String = parser::tree_to_source(cmd_history);
-                    TextEdit::multiline(&mut buffer).show(ui);
+                    ui.horizontal(|ui| {
+                        if ui.add(egui::Button::new("Apply")).clicked() {
+                            *code_error = "".to_string();
+                            *cmd_history = parser::source_to_tree(code);
+                            match Painting::from_program(current.size, &cmd_history) {
+                                Ok(prog) => *current = prog,
+                                Err(err) => {
+                                    *code_error = format!("Error parsing code: {err:?}");
+                                }
+                            };
+                        }
+                        if ui.add(egui::Button::new("Undo")).clicked() {
+                            let _ = cmd_history.pop();
+                            *code = parser::tree_to_source(cmd_history);
+                            match Painting::from_program(current.size, &cmd_history) {
+                                Ok(prog) => *current = prog,
+                                Err(err) => {
+                                    *code_error = format!("Error parsing code: {err:?}");
+                                }
+                            };
+                        }
+                        });
+                    ui.colored_label(Color32::RED, code_error.clone());
+                    TextEdit::multiline(code).show(ui);
                 })
             });
 
@@ -219,6 +248,8 @@ impl eframe::App for TemplateApp {
                                     if ctx.input().pointer.primary_clicked() {
                                         current.apply_cmd(cmd).unwrap();
                                         cmd_history.push(cmd.clone());
+                                        *code = parser::tree_to_source(cmd_history);
+                                        *code_error = "".to_string();
                                     }
                                 }
                             }
@@ -259,8 +290,10 @@ impl eframe::App for TemplateApp {
                         if ctx.input().pointer.primary_clicked() {
                             let x = curr_pos.unwrap().0 as i32;
                             let y = (current.size.1 - curr_pos.unwrap().1) as i32;
-                            let xr = (x-2..x+2).filter(|&x| x >= 0 && x < current.size.0 as i32);
-                            let yr = (y-2..y+2).filter(|&x| x >= 0 && x < current.size.1 as i32);
+                            let xr =
+                                (x - 2..x + 2).filter(|&x| x >= 0 && x < current.size.0 as i32);
+                            let yr =
+                                (y - 2..y + 2).filter(|&x| x >= 0 && x < current.size.1 as i32);
                             let mut rgba_total: [u32; 4] = [0, 0, 0, 0];
                             for x in xr.clone() {
                                 for y in yr.clone() {
