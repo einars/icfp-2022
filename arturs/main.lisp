@@ -250,7 +250,7 @@
 	(s (box-shape box)))
     (cond
       ((eq axis 'x) (and (< (pos-x p) num (1- (+ (pos-x p) (shape-w s))))))
-      ((eq axis 'y) (and (< (pos-y p) num (1- (+ (pos-x p) (shape-w s))))))
+      ((eq axis 'y) (and (< (pos-y p) num (1- (+ (pos-y p) (shape-h s))))))
       (t nil))))
 
 (define-condition lcut-error (error) ())
