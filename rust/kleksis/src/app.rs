@@ -5,18 +5,18 @@ use egui::{Color32, Painter, Rgba, TextEdit};
 use egui_extras::RetainedImage;
 use parser::{BlockId, CutDirection, ProgCmd};
 
-pub struct TemplateApp {
+pub struct TemplateApp<'a> {
     action: Action,
     color: [u8; 4],
 
     target: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
 
-    current: Painting,
+    current: Painting<'a>,
 
     cmd_history: Vec<ProgCmd>,
 
     next_cmd: Option<ProgCmd>,
-    next: Painting,
+    next: Painting<'a>,
 
     code: String,
     code_error: String,
@@ -32,7 +32,7 @@ enum Action {
     Color,
 }
 
-impl TemplateApp {
+impl<'a> TemplateApp<'a> {
     /// Called once before the first frame.
     #[allow(unused)]
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -59,7 +59,7 @@ impl TemplateApp {
     }
 }
 
-impl eframe::App for TemplateApp {
+impl<'a> eframe::App for TemplateApp<'a> {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {

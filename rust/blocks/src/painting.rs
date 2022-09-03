@@ -74,9 +74,10 @@ impl<'a> Painting<'a> {
             Color(id, color) => {
                 let idx = self.get_block_idx(id)?;
                 let block = &self.blocks[idx];
+                let image = self.image.to_mut();
                 for x in block.pos.0..(block.pos.0 + block.size.0) {
                     for y in block.pos.1..(block.pos.1 + block.size.1) {
-                        self.image.put_pixel(x, self.size.1 - y - 1, Rgba(color.0));
+                        image.put_pixel(x, self.size.1 - y - 1, Rgba(color.0));
                     }
                 }
             }
