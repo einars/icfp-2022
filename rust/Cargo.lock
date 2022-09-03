@@ -1100,6 +1100,9 @@ dependencies = [
 name = "mosaic"
 version = "0.1.0"
 dependencies = [
+ "blocks",
+ "compadre",
+ "parser",
  "png",
 ]
 

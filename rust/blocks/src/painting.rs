@@ -3,7 +3,7 @@ use image::{Rgba, ImageBuffer};
 
 use super::*;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Painting {
     pub blocks: Vec<Block>,
     pub size: (u32, u32),

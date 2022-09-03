@@ -19,9 +19,9 @@ use parser::*;
 use blocks::painting::{Painting, PaintError};
 use blocks::Block;
 
-type Rgb = [u8; 4];
+pub type Rgb = [u8; 4];
 
-fn compare_rgb(a: Rgb, b: Rgb) -> f64 {
+pub fn compare_rgb(a: Rgb, b: Rgb) -> f64 {
     let a0: i32 = (a[0] as i32) - (b[0] as i32);
     let a1: i32 = (a[1] as i32) - (b[1] as i32);
     let a2: i32 = (a[2] as i32) - (b[2] as i32);

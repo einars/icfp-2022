@@ -7,3 +7,12 @@ edition = "2021"
 
 [dependencies]
 png = "*"
+
+[dependencies.blocks]
+path = "../blocks/"
+
+[dependencies.compadre]
+path = "../compadre/"
+
+[dependencies.parser]
+path = "../parser/"
