@@ -373,22 +373,22 @@
 (defun calc-color (box n)
   (average-color (make-shape :pos (box-pos box) :size (mosaic-chunk n))))
 
-(defun run-mosaic-program-solver (n)
+(defun run-mosaic-program-solver (n &optional (x 0) (y 0))
   (let ((stepx (floor (/ *image-w* n)))
 	(stepy (floor (/ *image-h* n))))
     (defun slice-horizontal-problem (i w box)
       (color box (calc-color box n))
-      (when (< i (1- (floor n)))
+      (when (<= w (- *image-w* stepx))
 	(let ((children (lcut box 'x w)))
 	  (slice-horizontal-problem (1+ i) (+ w stepx) (second children)))))
     (defun slice-vertical-problem (i h box)
-      (when (< i (1- (floor n)))
+      (when (<= h (- *image-h* stepy))
 	(let ((children (lcut box 'y h)))
 	  (setf box (first children))
 	  (slice-vertical-problem (1+ i) (+ h stepy) (second children))))
-      (slice-horizontal-problem 0 stepx box))
+      (slice-horizontal-problem 0 (+ x stepx) box))
     ; now run the slicer
-    (slice-vertical-problem 0 stepy (find-box '(0)))))
+    (slice-vertical-problem 0 (+ y stepy) (find-box '(0)))))
 
 (defun painter (i n)
   (let* ((file (format nil "../problems/~A.png" i))
@@ -409,12 +409,11 @@
     (save-canvas)
     (score)))
 
-(defun paint-all (i)
+(defun paint-all (i &optional (lo 2.0) (hi 12.0))
   (let ((chunk-size nil)
 	(best most-positive-fixnum))
-    (loop for n from 20 to 120 do
-      (let* ((size (/ n 10.0))
-	     (score (painter i size)))
+    (loop for size from lo to hi by 0.1 do
+      (let ((score (painter i size)))
 	(when (< score best)
 	  (setf chunk-size size)
 	  (setf best score))))
