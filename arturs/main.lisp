@@ -13,6 +13,7 @@
 (defvar *image-w* 0)
 (defvar *image-h* 0)
 (defvar *surface* 0)
+(defvar *problem* 0)
 
 (defvar *pnm* "canvas.pnm")
 (defvar *txt* "result.txt")
@@ -252,9 +253,13 @@
       ((eq axis 'y) (and (< (pos-y p) num (1- (+ (pos-x p) (shape-w s))))))
       (t nil))))
 
+(define-condition lcut-error (error) ())
+
 (defun lcut (box axis num)
-  (when (consp (box-children box)) (error "box already have children"))
-  (when (not (lcut-sanity-check box axis num)) (error "bad lcut num"))
+  (when (consp (box-children box))
+    (error "box already have children"))
+  (when (not (lcut-sanity-check box axis num))
+    (error 'lcut-error))
   (setf (box-children box) (l-split box axis num))
   (push `(:lcut ,box ,axis ,num) *program*)
   (box-children box))
@@ -477,7 +482,7 @@
       (execute-cmd i))
     (let ((score (score)))
       (when (< score *best*)
-	(format t "BEST:~A~%" score)
+	(format t "BEST(~A):~A~%" *problem* score)
 	(setf *best* score)
 	(save-program)
 	(save-canvas))
@@ -495,7 +500,7 @@
 
 (defun execute-program-safe (x)
   (handler-case (execute-program x)
-    (condition (var)
+    (lcut-error (var)
       (declare (ignore var))
       (list most-positive-fixnum nil))))
 
@@ -523,6 +528,7 @@
 	 (*target* (convert-image png))
 	 (*canvas* (empty-canvas))
 	 (*allbox* (empty-allbox))
+	 (*problem* i)
 	 (*boxnum* 0))
     (run-mosaic-program-solver x y)
     (format t "N(~A,~A): SCORE:~A~%" x y (score))
@@ -530,6 +536,11 @@
     (save-canvas)
     (optimize-program *program*)
     (score)))
+
+(defun top-level (i x y)
+  (handler-case (painter i x y)
+    (condition (var) (format t "ERROR: ~A~%" var)))
+  (uiop:quit 0))
 
 (defun paint-all (i &key (lo 2.0) (hi 12.0) (step 0.1))
   (let ((chunk-size nil)
