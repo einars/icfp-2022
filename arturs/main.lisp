@@ -488,7 +488,7 @@
   (execute-program (new-mutation (second x))))
 
 (defun optimize-program (program)
-  (let ((*best* (score))
+  (let ((*best* most-positive-fixnum)
 	(pool (create-program-pool program)))
     (loop (setf pool (sort pool #'> :key #'first))
 	  (dotimes (i +half-pool+)
