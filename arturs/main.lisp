@@ -408,6 +408,35 @@
     ; now run the slicer
     (slice-vertical-problem 0 stepy (find-box '(0)))))
 
+(defun random-elt (l)
+  (elt l (random (length l))))
+
+(defun random-jerk (num)
+  (+ num 1 (* -2 (random 2))))
+
+(defun mutate-number (victim)
+  (setf (first victim) (random-jerk (first victim))))
+
+(defun clamp (num)
+  (max 0 (min 255 num)))
+
+(defun mutate-color (victim)
+  (let ((index (random 3)))
+    (setf (elt victim index) (clamp (random-jerk (elt victim index))))
+    victim))
+
+(defun random-tweak-program (program)
+  (let ((places nil))
+    (dolist (i program)
+      (case (first i)
+	(:color (push (third i) places))
+	(:lcut (push (rest (rest (rest i))) places))
+	(otherwise nil)))
+    (let ((victim (random-elt places)))
+      (if (vectorp victim)
+	  (mutate-color victim)
+	  (mutate-number victim)))))
+
 (defun painter (i x y)
   (let* ((file (format nil "../problems/~A.png" i))
 	 (png (png-read:read-png-file file))
