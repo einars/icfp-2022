@@ -307,8 +307,6 @@
    :shape (merge-shape (box-shape box1) (box-shape box2))))
 
 (defun box-merge (box1 box2)
-  (when (not (is-good-merge box1 box2))
-    (error "boxes for merge are not good"))
   (register-merge-cmd box1 box2)
   (remove-from-parent box1)
   (remove-from-parent box2)
