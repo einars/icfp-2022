@@ -332,11 +332,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                         if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
                             if let Ok(block) = current.get_block(&id) {
                                 let color = calc_avgcolor(&block, target);
-                                let cmd = ProgCmd::Color(id, color);
-                                current.apply_cmd(&cmd).unwrap();
-                                cmd_history.push(cmd.clone());
-                                *code = parser::tree_to_source(cmd_history);
-                                *code_error = "".to_string();
+                                dispatch_cmd!(id, ProgCmd::Color(id, color), {});
                             }
                         }
                     }
