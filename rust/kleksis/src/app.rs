@@ -127,6 +127,11 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     *action = Action::Merge
                 }
 
+                if *action == Action::Merge {
+                    ui.heading("Merge blocks");
+                    ui.label("Hold Ctrl to pick other block");
+                }
+
                 if *action == Action::Color {
                     ui.heading("Select Color");
                     ui.label("Hold Ctrl to pick from image");
@@ -177,10 +182,14 @@ impl<'a> eframe::App for TemplateApp<'a> {
                         if ui.add(egui::Button::new("Apply")).clicked() {
                             *code_error = "".to_string();
                             match parser::source_to_tree(code) {
-                                Ok(cmds) => {*cmd_history = cmds;}
-                                Err(err) => { *code_error = format!("Error parsing code: {err:?}"); }
+                                Ok(cmds) => {
+                                    *cmd_history = cmds;
+                                }
+                                Err(err) => {
+                                    *code_error = format!("Error parsing code: {err:?}");
+                                }
                             }
-                            
+
                             match Painting::from_program(current.size, &cmd_history) {
                                 Ok(prog) => *current = prog,
                                 Err(err) => {
@@ -198,7 +207,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                                 }
                             };
                         }
-                        });
+                    });
                     ui.colored_label(Color32::RED, code_error.clone());
                     TextEdit::multiline(code).show(ui);
                 })
@@ -340,10 +349,12 @@ impl<'a> eframe::App for TemplateApp<'a> {
                         dispatch_cmd!(id, ProgCmd::Color(id, parser::Color(*color)), {});
                     }
                 }
-              
+
                 if *action == Action::Merge {
-                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                        *origin_block = Some(id);
+                    if !ctx.input().modifiers.ctrl {
+                        if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                            *origin_block = Some(id);
+                        }
                     }
 
                     let size = current.size;
@@ -354,16 +365,22 @@ impl<'a> eframe::App for TemplateApp<'a> {
                                 if let Some(id2) = pos_to_block(&canvas.rect, pos, current) {
                                     let block2 = current.get_block(&id2).unwrap();
                                     if block != *block2 && block.is_adjacent(block2).is_ok() {
-                                        paint.rect_stroke(block_rect(block2, size, &canvas.rect), 0.0, (2.0, Color32::BLUE));
+                                        paint.rect_stroke(
+                                            block_rect(block2, size, &canvas.rect),
+                                            0.0,
+                                            (2.0, Color32::RED),
+                                        );
                                         dispatch_cmd!(id, ProgCmd::Merge(id, id1.clone()), {})
-                                    }                                    
-                                }                                                                
+                                    }
+                                }
                             }
-                            paint.rect_stroke(block_rect(&block, size, &canvas.rect), 0.0, (2.0, Color32::BLUE));
+                            paint.rect_stroke(
+                                block_rect(&block, size, &canvas.rect),
+                                0.0,
+                                (2.0, Color32::RED),
+                            );
                         }
                     }
-                    
-                    
 
                     //dispatch_cmd! (id, ProgCmd::Merge(id, id1), {
 
