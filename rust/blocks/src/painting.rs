@@ -3,11 +3,13 @@ use image::{Rgba, ImageBuffer};
 
 use super::*;
 
+type ImgBuf = ImageBuffer<Rgba<u8>, Vec<u8>>;
+
 #[derive(Debug, Clone)]
-pub struct Painting {
+pub struct Painting<'a> {
     pub blocks: Vec<Block>,
     pub size: (u32, u32),
-    pub image: ImageBuffer<Rgba<u8>, Vec<u8>>,
+    pub image: std::borrow::Cow<'a, ImgBuf>,
 }
 
 #[derive(Debug)]
@@ -22,12 +24,21 @@ impl From<BlockError> for PaintError {
     }
 }
 
-impl Painting {
+impl<'a> Painting<'a> {
     pub fn new(size: (u32, u32)) -> Self {
         Self {
             blocks: vec![Block { id: BlockId([0].to_vec()), pos: (0, 0), size: size}],
             size: size,
-            image: ImageBuffer::from_fn(size.0, size.1, |_x, _y| Rgba::<u8>([255, 255, 255, 255])),
+            image: std::borrow::Cow::<'a, _>::Owned(ImageBuffer::from_fn(size.0, size.1, |_x, _y| Rgba::<u8>([255, 255, 255, 255]))),
+        }
+    }
+
+    pub fn cow_clone(prev: &'a Self) -> Self {
+
+        Self {
+            blocks: prev.blocks.clone(),
+            size: prev.size,
+            image: prev.image.clone(),
         }
     }
 
