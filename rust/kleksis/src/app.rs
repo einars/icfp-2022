@@ -35,9 +35,10 @@ impl TemplateApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customized the look at feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-        let file_name = std::env::args().nth(1).expect("Specify problem file to load as cmd arg");
-        let (size_img, pixels) =
-            load_image_from_path(std::path::Path::new(&file_name)).unwrap();
+        let file_name = std::env::args()
+            .nth(1)
+            .expect("Specify problem file to load as cmd arg");
+        let (size_img, pixels) = load_image_from_path(std::path::Path::new(&file_name)).unwrap();
         let size = (size_img[0] as u32, size_img[1] as u32);
 
         Self {
@@ -89,15 +90,35 @@ impl eframe::App for TemplateApp {
             .show(ctx, |ui| {
                 ui.heading("Action");
 
-                ui.radio_value(action, Action::CutHoriz, "Cut Horizontally");
-                ui.radio_value(action, Action::CutVert, "Cut Vertically");
-                ui.radio_value(action, Action::CutPoint, "Cut Point");
-                ui.radio_value(action, Action::Color, "Color");
-                ui.radio_value(action, Action::Swap, "Swap");
-                ui.radio_value(action, Action::Merge, "Merge");
+                ui.radio_value(action, Action::CutHoriz, "Cut Horizontally (h)");
+                ui.radio_value(action, Action::CutVert, "Cut Vertically (v)");
+                ui.radio_value(action, Action::CutPoint, "Cut Point (p)");
+                ui.radio_value(action, Action::Color, "Color (c)");
+                ui.radio_value(action, Action::Swap, "Swap (s)");
+                ui.radio_value(action, Action::Merge, "Merge (m)");
+
+                if ctx.input().key_pressed(egui::Key::H) {
+                    *action = Action::CutHoriz
+                }
+                if ctx.input().key_pressed(egui::Key::V) {
+                    *action = Action::CutVert
+                }
+                if ctx.input().key_pressed(egui::Key::P) {
+                    *action = Action::CutPoint
+                }
+                if ctx.input().key_pressed(egui::Key::C) {
+                    *action = Action::Color
+                }
+                if ctx.input().key_pressed(egui::Key::S) {
+                    *action = Action::Swap
+                }
+                if ctx.input().key_pressed(egui::Key::M) {
+                    *action = Action::Merge
+                }
 
                 if *action == Action::Color {
                     ui.heading("Select Color");
+                    ui.label("Hold Ctrl to pick from image");
                     ui.horizontal(|ui| {
                         ui.color_edit_button_srgba_unmultiplied(color);
 
@@ -117,17 +138,17 @@ impl eframe::App for TemplateApp {
                     let score_next = compadre::compare(
                         next.image.as_flat_samples().as_slice(),
                         target.as_flat_samples_mut().as_slice(),
-                    );                    
+                    );
                     ui.label("Score: ");
                     ui.label(score.to_string());
                     match score_next as i32 - score as i32 {
-                        diff  if diff < 0 => {
+                        diff if diff < 0 => {
                             ui.colored_label(Color32::GREEN, diff.to_string());
-                        },
+                        }
                         diff if diff > 0 => {
                             ui.colored_label(Color32::RED, diff.to_string());
-                        },
-                        _ => ()
+                        }
+                        _ => (),
                     }
                 });
                 ui.horizontal(|ui| {
@@ -186,60 +207,77 @@ impl eframe::App for TemplateApp {
                     current.size.1 - (pos.y - canvas.rect.min.y) as u32,
                 ));
 
-                if *action == Action::CutHoriz {
-                    paint.hline(
-                        canvas.rect.min.x..=canvas.rect.max.x,
-                        pos.y,
-                        (2.0, Color32::RED),
-                    );
-                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                        *next_cmd =
-                            Some(ProgCmd::LineCut(id, CutDirection::Y, curr_pos.unwrap().1));
-                        if let Some(cmd) = next_cmd {
-                            *next = current.clone();
-                            if let Some(_) = next.apply_cmd(cmd).ok() {
-                                if ctx.input().pointer.primary_clicked() {
-                                    current.apply_cmd(cmd).unwrap();
-                                    cmd_history.push(cmd.clone());
+                macro_rules! dispatch_cmd {
+                    ($id:ident, $cmd:expr, $init:block) => {{
+                        $init
+                        if let Some($id) = pos_to_block(&canvas.rect, pos, current) {
+                            *next_cmd =
+                                Some($cmd);
+                            if let Some(cmd) = next_cmd {
+                                *next = current.clone();
+                                if let Some(_) = next.apply_cmd(cmd).ok() {
+                                    if ctx.input().pointer.primary_clicked() {
+                                        current.apply_cmd(cmd).unwrap();
+                                        cmd_history.push(cmd.clone());
+                                    }
                                 }
                             }
                         }
-                    }
+                    }};
+                }
+
+                if *action == Action::CutHoriz {
+                    dispatch_cmd!(
+                        id,
+                        ProgCmd::LineCut(id, CutDirection::Y, curr_pos.unwrap().1),
+                        {
+                            paint.hline(
+                                canvas.rect.min.x..=canvas.rect.max.x,
+                                pos.y,
+                                (2.0, Color32::RED),
+                            );
+                        }
+                    );
                 }
 
                 if *action == Action::CutVert {
-                    paint.vline(
-                        pos.x,
-                        canvas.rect.min.y..=canvas.rect.max.y,
-                        (2.0, Color32::RED),
-                    );
-                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                        *next_cmd =
-                            Some(ProgCmd::LineCut(id, CutDirection::X, curr_pos.unwrap().0));
-                        if let Some(cmd) = next_cmd {
-                            *next = current.clone();
-                            if let Some(_) = next.apply_cmd(cmd).ok() {
-                                if ctx.input().pointer.primary_clicked() {
-                                    current.apply_cmd(cmd).unwrap();
-                                    cmd_history.push(cmd.clone());
-                                }
-                            }
+                    dispatch_cmd!(
+                        id,
+                        ProgCmd::LineCut(id, CutDirection::X, curr_pos.unwrap().0),
+                        {
+                            paint.vline(
+                                pos.x,
+                                canvas.rect.min.y..=canvas.rect.max.y,
+                                (2.0, Color32::RED),
+                            );
                         }
-                    }
+                    )
                 }
 
                 if *action == Action::Color {
-                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                        *next_cmd = Some(ProgCmd::Color(id, parser::Color(*color)));
-                        if let Some(cmd) = next_cmd {
-                            *next = current.clone();
-                            if let Some(_) = next.apply_cmd(cmd).ok() {
-                                if ctx.input().pointer.primary_clicked() {
-                                    current.apply_cmd(cmd).unwrap();
-                                    cmd_history.push(cmd.clone());
+                    if ctx.input().modifiers.ctrl {
+                        if ctx.input().pointer.primary_clicked() {
+                            let x = curr_pos.unwrap().0 as i32;
+                            let y = (current.size.1 - curr_pos.unwrap().1) as i32;
+                            let xr = (x-2..x+2).filter(|&x| x >= 0 && x < current.size.0 as i32);
+                            let yr = (y-2..y+2).filter(|&x| x >= 0 && x < current.size.1 as i32);
+                            let mut rgba_total: [u32; 4] = [0, 0, 0, 0];
+                            for x in xr.clone() {
+                                for y in yr.clone() {
+                                    let rgba = target.get_pixel(x as u32, y as u32).0;
+                                    for i in 0..4 {
+                                        rgba_total[i] += rgba[i] as u32;
+                                    }
                                 }
                             }
+
+                            let num_points = xr.count() * yr.count();
+                            for i in 0..4 {
+                                color[i] = (rgba_total[i] / num_points as u32) as u8;
+                            }
                         }
+                    } else {
+                        dispatch_cmd!(id, ProgCmd::Color(id, parser::Color(*color)), {});
                     }
                 }
             }
