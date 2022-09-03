@@ -974,6 +974,7 @@ name = "kleksis"
 version = "0.1.0"
 dependencies = [
  "blocks",
+ "compadre",
  "eframe",
  "egui",
  "egui_extras",

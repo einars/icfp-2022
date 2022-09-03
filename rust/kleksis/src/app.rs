@@ -7,7 +7,7 @@ pub struct TemplateApp {
     action: Action,
     color: [u8; 4],
 
-    target: RetainedImage,
+    target: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
 
     current: Painting,
 
@@ -34,15 +34,11 @@ impl TemplateApp {
             load_image_from_path(std::path::Path::new("../../problems/1.png")).unwrap();
         let size = (size_img[0] as u32, size_img[1] as u32);
 
-        let data =
-            egui::ColorImage::from_rgba_unmultiplied(size_img, pixels.as_flat_samples().as_slice());
-        let mut img = RetainedImage::from_color_image("TODO.png", data);
-
         Self {
             // Example stuff:
             action: Action::CutHoriz,
             color: [0, 0, 0, 255],
-            target: img,
+            target: pixels,
             current: Painting::new(size),
             cmd_history: vec![],
         }
@@ -102,10 +98,21 @@ impl eframe::App for TemplateApp {
                     });
                 }
 
+                ui.heading("Scoring");
+                ui.horizontal(|ui| {
+                    let score = compadre::compare(current.image.as_flat_samples().as_slice(), target.as_flat_samples_mut().as_slice());
+                    ui.label("Score: ");
+                    ui.colored_label(Color32::GREEN, score.to_string());
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Cost: ");
+                    ui.colored_label(Color32::GREEN, "0");
+                });
+
+                ui.heading("Program");
                 egui::ScrollArea::vertical().show(ui, |ui| {
-                    for cmd in cmd_history.iter() {
-                        ui.label(cmd.to_string());
-                    }
+                    let mut buffer: String = parser::tree_to_source(cmd_history);
+                    TextEdit::multiline(&mut buffer).show(ui);
                 })
             });
 
@@ -122,7 +129,14 @@ impl eframe::App for TemplateApp {
                 )
                 .show(ui);
             } else {
-                canvas = target.show(ui);
+                canvas = RetainedImage::from_color_image(
+                    "Your masterpiece",
+                    egui::ColorImage::from_rgba_unmultiplied(
+                        [current.size.0 as usize, current.size.1 as usize],
+                        target.as_flat_samples().as_slice(),
+                    ),
+                )
+                .show(ui);
             }
             let paint = Painter::new(canvas.ctx.clone(), canvas.layer_id, canvas.rect);
 
@@ -150,15 +164,10 @@ impl eframe::App for TemplateApp {
                     );
                     if ctx.input().pointer.primary_clicked() {
                         if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                            let cmd = ProgCmd::LineCut(
-                                id,
-                                CutDirection::Y,
-                                curr_pos.unwrap().1,
-                            ); 
-                            let _ = current
-                                .apply_cmd(&cmd)
-                                .unwrap();
-                            cmd_history.push(cmd);
+                            let cmd = ProgCmd::LineCut(id, CutDirection::Y, curr_pos.unwrap().1);
+                            if let Some(_) = current.apply_cmd(&cmd).ok() {
+                                cmd_history.push(cmd);
+                            }
                         }
                     }
                 }
@@ -171,15 +180,10 @@ impl eframe::App for TemplateApp {
                     );
                     if ctx.input().pointer.primary_clicked() {
                         if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                            let cmd = ProgCmd::LineCut(
-                                id,
-                                CutDirection::X,
-                                curr_pos.unwrap().0,
-                            );
-                            let _ = current
-                                .apply_cmd(&cmd)
-                                .unwrap();
-                            cmd_history.push(cmd);
+                            let cmd = ProgCmd::LineCut(id, CutDirection::X, curr_pos.unwrap().0);
+                            if let Some(_) = current.apply_cmd(&cmd).ok() {
+                                cmd_history.push(cmd);
+                            }
                         }
                     }
                 }
@@ -188,10 +192,9 @@ impl eframe::App for TemplateApp {
                     if ctx.input().pointer.primary_clicked() {
                         if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
                             let cmd = ProgCmd::Color(id, parser::Color(*color));
-                            let _ = current
-                                .apply_cmd(&cmd)
-                                .unwrap();
-                            cmd_history.push(cmd);
+                            if let Some(_) = current.apply_cmd(&cmd).ok() {
+                                cmd_history.push(cmd);
+                            }
                         }
                     }
                 }
