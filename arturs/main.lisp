@@ -437,6 +437,32 @@
 	  (mutate-color victim)
 	  (mutate-number victim)))))
 
+(defun copy-color (color-cmd)
+  (setf (third color-cmd) (copy-seq (third color-cmd))))
+
+(defun copy-and-reverse-program (program)
+  (let ((copy nil))
+    (dolist (i program copy)
+      (let ((subcopy (copy-list i)))
+	(push subcopy copy)
+	(when (eq (first subcopy) :color)
+	  (copy-color subcopy))))))
+
+(defun execute-cmd (cmd)
+  (let ((box (find-box (box-id (second cmd)))))
+    (case (first cmd)
+      (:color (color box (third cmd)))
+      (:lcut (lcut box (third cmd) (fourth cmd)))
+      (otherwise (error "implement execute cmd")))))
+
+(defun execute-program (program)
+  (let ((*program* (make-empty-program))
+	(*canvas* (empty-canvas))
+	(*allbox* (empty-allbox))
+	(*boxnum* 0))
+    (dolist (i program)
+      (execute-cmd i))))
+
 (defun painter (i x y)
   (let* ((file (format nil "../problems/~A.png" i))
 	 (png (png-read:read-png-file file))
