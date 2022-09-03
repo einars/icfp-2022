@@ -328,12 +328,10 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 }
 
                 if *action == Action::AvgColor {
-                    if ctx.input().pointer.primary_clicked() {
-                        if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                            if let Ok(block) = current.get_block(&id) {
-                                let color = calc_avgcolor(&block, target);
-                                dispatch_cmd!(id, ProgCmd::Color(id, color), {});
-                            }
+                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                        if let Ok(block) = current.get_block(&id) {
+                            let color = calc_avgcolor(&block, target);
+                            dispatch_cmd!(id, ProgCmd::Color(id, color), {});
                         }
                     }
                 }
