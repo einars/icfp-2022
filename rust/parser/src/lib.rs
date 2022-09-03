@@ -26,7 +26,7 @@
 //! merge [1.0] [1.0]";
 //! 
 //! assert_eq!(tree_to_source(&p_tree), p_source);
-//! assert_eq!(source_to_tree(p_source), p_tree);
+//! assert_eq!(source_to_tree(p_source), Ok(p_tree));
 //! 
 //! ```
 
@@ -35,7 +35,6 @@ pub mod unparse;
 
 /// source_to_tree impl
 pub mod parse;
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockId(pub Vec<u32>);
@@ -60,7 +59,7 @@ pub enum ProgCmd {
 }
 
 
-pub fn source_to_tree(s: &str) -> Vec<ProgCmd> {
+pub fn source_to_tree(s: &str) -> Result<Vec<ProgCmd>, String> {
     parse::parse(s)
 }
 
@@ -68,4 +67,9 @@ pub fn tree_to_source(v: &Vec<ProgCmd>) -> String {
     unparse::unparse(v)
 }
 
+#[test]
+fn test_spec_cases() {
+    assert_eq!(source_to_tree(""), Ok(vec![]));
+    assert_eq!(source_to_tree("broken"), Err("Cannot parse: broken".to_string()));
+}
 

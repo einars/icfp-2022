@@ -6,7 +6,7 @@ use nom::{
     character::complete::{char, digit1, newline, one_of},
     combinator::recognize,
     sequence::delimited,
-    multi::{many0, many1, separated_list1},
+    multi::{many0, many1, separated_list0, separated_list1},
     IResult,
 };
 
@@ -135,22 +135,32 @@ fn cmd_color(s: &str) -> IResult<&str, ProgCmd> {
 
 
 
-fn match_command(s: &str) -> IResult<&str, Vec<ProgCmd>> {
-    separated_list1(newline, alt((
+pub fn parse(s: &str) -> Result<Vec<ProgCmd>, String> {
+
+    let sl = separated_list0(newline, alt((
         cmd_comment,
         cmd_pointcut,
         cmd_linecut,
         cmd_color,
         cmd_swap,
         cmd_merge,
-    )))(s)
-}
+    )))(s);
 
-pub fn parse(code: &str) -> Vec<ProgCmd> {
-    match match_command(code) {
-        Ok((_, cmds)) => cmds,
-        Err(e) => panic!("Oh my, {e}"),
+
+    match sl {
+        Ok((rest, prg)) => {
+            if rest.len() == 0 {
+                Ok(prg)
+            } else {
+                let e = format!("Cannot parse: {}", rest);
+                Err(e)
+            }
+        },
+        Err(e) => {
+            let e = format!("Parse error: {}", e);
+            Err(e)
+        }
+
     }
 }
-
 
