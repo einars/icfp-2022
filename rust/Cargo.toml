@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "blocks",
+    "compadre",
     "kleksis",
     "mosaic",
     "parser",
