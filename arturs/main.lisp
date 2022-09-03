@@ -5,6 +5,7 @@
 (defvar *target* nil)
 (defvar *canvas* nil)
 (defvar *allbox* nil)
+(defvar *boxnum* 0)
 
 (defvar *program* nil)
 
@@ -114,7 +115,7 @@
   (make-shape :pos *zero* :size (make-pos :x *image-w* :y *image-h*)))
 
 (defun full-canvas-box ()
-  (make-box :id '(0) :color *white* :shape (full-canvas-shape)))
+  (make-box :id (list *boxnum*) :color *white* :shape (full-canvas-shape)))
 
 (defun empty-allbox ()
   (make-box :children (list (full-canvas-box))))
@@ -140,6 +141,7 @@
 	      (:lcut 7)
 	      (:pcut 10)
 	      (:color 5)
+	      (:merge 1)
 	      (otherwise 0)))))
 
 (defun cost ()
@@ -284,11 +286,17 @@
 	  (format-id (second cmd))
 	  (format-color (third cmd))))
 
+(defun format-merge-command (out cmd)
+  (format out "merge [~A] [~A]~%"
+	  (format-id (second cmd))
+	  (format-id (third cmd))))
+
 (defun save-command (out cmd)
   (case (first cmd)
     (:lcut (format-lcut-command out cmd))
     (:pcut (format-pcut-command out cmd))
     (:swap (format-swap-command out cmd))
+    (:merge (format-merge-command out cmd))
     (:color (format-color-command out cmd))
     (otherwise nil)))
 
@@ -331,7 +339,8 @@
 	 (*surface* (* *image-w* *image-h*))
 	 (*target* (convert-image png))
 	 (*canvas* (empty-canvas))
-	 (*allbox* (empty-allbox)))
+	 (*allbox* (empty-allbox))
+	 (*boxnum* 0))
     (run-test-program-problem-1)
     (format t "SCORE:~A~%" (score))
     (save-program)
