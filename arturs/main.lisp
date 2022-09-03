@@ -354,7 +354,7 @@
 
 (defun save-program ()
   (with-open-file (out "result.txt" :direction :output :if-exists :supersede)
-    (mapc (lambda (cmd) (save-command out cmd)) (nreverse *program*))))
+    (mapc (lambda (cmd) (save-command out cmd)) (reverse *program*))))
 
 (defun average-color (shape)
   (let ((count 0) (avg-color (make-color 0 0 0 0)))
@@ -375,11 +375,11 @@
 	(stepy (floor (/ *image-h* n))))
     (defun slice-horizontal-problem (i w box)
       (color box (calc-color box n))
-      (when (< i (1- n))
+      (when (< i (1- (floor n)))
 	(let ((children (lcut box 'x w)))
 	  (slice-horizontal-problem (1+ i) (+ w stepx) (second children)))))
     (defun slice-vertical-problem (i h box)
-      (when (< i (1- n))
+      (when (< i (1- (floor n)))
 	(let ((children (lcut box 'y h)))
 	  (setf box (first children))
 	  (slice-vertical-problem (1+ i) (+ h stepy) (second children))))
@@ -400,8 +400,17 @@
     (run-mosaic-program-solver n)
     (format t "N(~A): SCORE:~A~%" n (score))
     (save-program)
-    (save-canvas)))
+    (save-canvas)
+    (score)))
 
 (defun paint-all (file)
-  (loop for n from 2 to 12 do
-    (painter file n)))
+  (let ((chunk-size nil)
+	(best most-positive-fixnum))
+    (loop for n from 20 to 120 do
+      (let* ((size (/ n 10.0))
+	     (score (painter file size)))
+	(when (< score best)
+	  (setf chunk-size size)
+	  (setf best score))))
+    (format t "BEST SCORE:~A N(~A)~%" best chunk-size)
+    (painter file chunk-size)))
