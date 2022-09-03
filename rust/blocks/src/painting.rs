@@ -31,6 +31,14 @@ impl Painting {
         }
     }
 
+    pub fn from_program(size: (u32, u32), program: &Vec<ProgCmd>) -> Result<Self, PaintError> {
+        let mut painting = Self::new(size);
+        for cmd in program.iter() {
+            painting.apply_cmd(cmd)?;
+        }
+        Ok(painting)
+    }
+
     pub fn apply_cmd(&mut self, cmd: &ProgCmd) -> Result<(), PaintError>{
         use parser::ProgCmd::*;
         
