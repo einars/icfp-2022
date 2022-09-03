@@ -87,6 +87,14 @@
 (defun make-color (r g b a)
   (vector r g b a))
 
+(defun add-color (dst src)
+  (dotimes (i +components+)
+    (incf (elt dst i) (elt src i))))
+
+(defun div-color (color div)
+  (dotimes (i +components+ color)
+    (setf (elt color i) (round (/ (elt color i) div)))))
+
 (defparameter *white* (make-color 255 255 255 255))
 
 (defun empty-canvas ()
@@ -227,10 +235,10 @@
 	(ty (- *image-w* (+ (shape-y shape) y 1))))
     (setf (aref *canvas* tx ty) color)))
 
-(defun get-pixel (shape x y)
+(defun get-pixel (shape x y &optional (img *canvas*))
   (let ((tx (+ (shape-x shape) x))
 	(ty (- *image-w* (+ (shape-y shape) y 1))))
-    (aref *canvas* tx ty)))
+    (aref img tx ty)))
 
 (defun color (box color)
   (let* ((shape (box-shape box)))
@@ -348,32 +356,35 @@
   (with-open-file (out "result.txt" :direction :output :if-exists :supersede)
     (mapc (lambda (cmd) (save-command out cmd)) (nreverse *program*))))
 
-(defun slice-horizontal-problem-1 (n w box p)
-  (when p (color box (if (oddp n) (make-color 0 0 0 255) *white*)))
-  (when (> w 0)
-    (let ((children (lcut box 'x w)))
-      (slice-horizontal-problem-1 (1+ n) (- w 40) (first children) p))))
+(defun average-color (shape)
+  (let ((count 0) (avg-color (make-color 0 0 0 0)))
+    (dotimes (y (shape-h shape))
+      (dotimes (x (shape-w shape))
+	(add-color avg-color (get-pixel shape x y *target*))
+	(incf count)))
+    (div-color avg-color count)))
 
-(defun slice-vertical-problem-1 (n h box)
-  (when (< h 400)
+(defun mosaic-chunk (n)
+  (make-pos :x (/ *image-w* n) :y (/ *image-h* n)))
+
+(defun calc-color (box n)
+  (average-color (make-shape :pos (box-pos box) :size (mosaic-chunk n))))
+
+(defun slice-horizontal-problem (n w box)
+  (color box (calc-color box n))
+  (when (< w *image-w*)
+    (let ((children (lcut box 'x w)))
+      (slice-horizontal-problem n (+ w (/ *image-w* n)) (second children)))))
+
+(defun slice-vertical-problem (n h box)
+  (when (< h *image-h*)
     (let ((children (lcut box 'y h)))
       (setf box (first children))
-      (slice-vertical-problem-1 (1+ n) (+ 40 h) (second children))))
-  (when (oddp n) (color box *white*))
-  (slice-horizontal-problem-1 0 320 box (= h 400)))
+      (slice-vertical-problem n (+ h (/ *image-h* n)) (second children))))
+  (slice-horizontal-problem n (/ *image-w* n) box))
 
-(defun run-test-program-problem-1 ()
-  (color (find-box '(0)) (make-color 0 74 173 255))
-  (lcut (find-box '(0)) 'x 360)
-  (lcut (find-box '(0 0)) 'y 40)
-  (color (find-box '(0 0 1)) (make-color 0 0 0 255))
-  (slice-vertical-problem-1 0 80 (find-box '(0 0 1)))
-  (loop for x from 340 downto 20 by 80 do
-    (loop for y from 60 to 300 by 80 do
-      (swap (box-by-pos (make-pos :x x :y y))
-	    (box-by-pos (make-pos :x x :y (+ y 40))))))
-  (color (box-by-pos (make-pos :x 340 :y 60))
-         (make-color 0 74 173 255)))
+(defun run-mosaic-program-solver (n)
+  (slice-vertical-problem n (/ *image-h* n) (find-box '(0))))
 
 (defun painter (file)
   (let* ((png (png-read:read-png-file file))
@@ -385,7 +396,7 @@
 	 (*canvas* (empty-canvas))
 	 (*allbox* (empty-allbox))
 	 (*boxnum* 0))
-    (run-test-program-problem-1)
+    (run-mosaic-program-solver 10)
     (format t "SCORE:~A~%" (score))
     (save-program)
     (save-canvas)))
