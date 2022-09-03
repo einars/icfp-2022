@@ -13,6 +13,9 @@
 (defvar *image-h* 0)
 (defvar *surface* 0)
 
+(defvar *pnm* "canvas.pnm")
+(defvar *txt* "result.txt")
+
 (defstruct pos x y)
 
 (defun pos-add-x (p x)
@@ -144,7 +147,7 @@
     (format out "~A " (elt (aref *canvas* x y) i))))
 
 (defun save-canvas ()
-  (with-open-file (out "canvas.pnm" :direction :output :if-exists :supersede)
+  (with-open-file (out *pnm* :direction :output :if-exists :supersede)
     (format out "P3~%~A ~A 255~%" *image-w* *image-h*)
     (dotimes (y *image-h*)
       (dotimes (x *image-w*)
@@ -353,7 +356,7 @@
     (otherwise nil)))
 
 (defun save-program ()
-  (with-open-file (out "result.txt" :direction :output :if-exists :supersede)
+  (with-open-file (out *txt* :direction :output :if-exists :supersede)
     (mapc (lambda (cmd) (save-command out cmd)) (reverse *program*))))
 
 (defun average-color (shape)
@@ -387,8 +390,11 @@
     ; now run the slicer
     (slice-vertical-problem 0 stepy (find-box '(0)))))
 
-(defun painter (file n)
-  (let* ((png (png-read:read-png-file file))
+(defun painter (i n)
+  (let* ((file (format nil "../problems/~A.png" i))
+	 (png (png-read:read-png-file file))
+	 (*pnm* (format nil "canvas/~A.pnm" i))
+	 (*txt* (format nil "result/~A.txt" i))
 	 (*program* (make-empty-program))
 	 (*image-w* (png-read:width png))
 	 (*image-h* (png-read:height png))
@@ -398,19 +404,24 @@
 	 (*allbox* (empty-allbox))
 	 (*boxnum* 0))
     (run-mosaic-program-solver n)
-    (format t "N(~A): SCORE:~A~%" n (score))
+;    (format t "N(~A): SCORE:~A~%" n (score))
     (save-program)
     (save-canvas)
     (score)))
 
-(defun paint-all (file)
+(defun paint-all (i)
   (let ((chunk-size nil)
 	(best most-positive-fixnum))
     (loop for n from 20 to 120 do
       (let* ((size (/ n 10.0))
-	     (score (painter file size)))
+	     (score (painter i size)))
 	(when (< score best)
 	  (setf chunk-size size)
 	  (setf best score))))
     (format t "BEST SCORE:~A N(~A)~%" best chunk-size)
-    (painter file chunk-size)))
+    (painter i chunk-size)))
+
+(defun paint-all-files ()
+  (loop for i from 1 to 25 do
+    (format t "P:~A " i)
+    (paint-all i)))
