@@ -365,17 +365,17 @@
 	(incf count)))
     (div-color avg-color count)))
 
-(defun mosaic-chunk (n)
-  (make-pos :x (floor (/ *image-w* n)) :y (floor (/ *image-h* n))))
+(defun mosaic-chunk (x y)
+  (make-pos :x (floor (/ *image-w* x)) :y (floor (/ *image-h* y))))
 
-(defun calc-color (box n)
-  (average-color (make-shape :pos (box-pos box) :size (mosaic-chunk n))))
+(defun calc-color (box x y)
+  (average-color (make-shape :pos (box-pos box) :size (mosaic-chunk x y))))
 
-(defun run-mosaic-program-solver (n &optional (x 0) (y 0))
-  (let ((stepx (floor (/ *image-w* n)))
-	(stepy (floor (/ *image-h* n))))
+(defun run-mosaic-program-solver (x y)
+  (let ((stepx (floor (/ *image-w* x)))
+	(stepy (floor (/ *image-h* y))))
     (defun slice-horizontal-problem (i w box)
-      (color box (calc-color box n))
+      (color box (calc-color box x y))
       (when (<= w (- *image-w* stepx))
 	(let ((children (lcut box 'x w)))
 	  (slice-horizontal-problem (1+ i) (+ w stepx) (second children)))))
@@ -384,11 +384,11 @@
 	(let ((children (lcut box 'y h)))
 	  (setf box (first children))
 	  (slice-vertical-problem (1+ i) (+ h stepy) (second children))))
-      (slice-horizontal-problem 0 (+ x stepx) box))
+      (slice-horizontal-problem 0 stepx box))
     ; now run the slicer
-    (slice-vertical-problem 0 (+ y stepy) (find-box '(0)))))
+    (slice-vertical-problem 0 stepy (find-box '(0)))))
 
-(defun painter (i n)
+(defun painter (i x y)
   (let* ((file (format nil "../problems/~A.png" i))
 	 (png (png-read:read-png-file file))
 	 (*pnm* (format nil "canvas/~A.pnm" i))
@@ -401,22 +401,22 @@
 	 (*canvas* (empty-canvas))
 	 (*allbox* (empty-allbox))
 	 (*boxnum* 0))
-    (run-mosaic-program-solver n)
+    (run-mosaic-program-solver x y)
 ;    (format t "N(~A): SCORE:~A~%" n (score))
     (save-program)
     (save-canvas)
     (score)))
 
-(defun paint-all (i &optional (lo 2.0) (hi 12.0))
+(defun paint-all (i &key (lo 2.0) (hi 12.0) (step 0.1))
   (let ((chunk-size nil)
 	(best most-positive-fixnum))
-    (loop for size from lo to hi by 0.1 do
-      (let ((score (painter i size)))
+    (loop for size from lo to hi by step do
+      (let ((score (painter i size size)))
 	(when (< score best)
 	  (setf chunk-size size)
 	  (setf best score))))
     (format t "BEST SCORE:~A N(~A)~%" best chunk-size)
-    (painter i chunk-size)))
+    (painter i chunk-size chunk-size)))
 
 (defun paint-all-files ()
   (loop for i from 1 to 25 do
