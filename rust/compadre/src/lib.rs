@@ -26,6 +26,7 @@ fn compare_rgb(a: Rgb, b: Rgb) -> f64 {
     ((a0.pow(2) + a1.pow(2) + a2.pow(2) + a3.pow(2)) as f64).sqrt()
 }
 
+/// Salīdzina divus attēlus
 pub fn compare(first: &[u8], second: &[u8]) -> u32 {
     let mut delta: f64 = 0.0;
     for x in 0..400 {
@@ -50,6 +51,7 @@ pub fn compare(first: &[u8], second: &[u8]) -> u32 {
     (delta * 0.005).round() as u32
 }
 
+/// Ielasa png attēlu un atdod baitu buferi
 pub fn pngread(file_name: &str) -> Vec<u8> {
     let decoder = png::Decoder::new(File::open(file_name).unwrap());
 
@@ -67,6 +69,7 @@ pub fn pngread(file_name: &str) -> Vec<u8> {
     buf
 }
 
+/// Uzģenerē defaulto balto attēlu
 pub fn gen_white() -> Vec<u8> {
     let mut v = Vec::new();
     v.resize(640000, 255);
