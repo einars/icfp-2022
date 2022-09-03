@@ -285,6 +285,25 @@ impl eframe::App for TemplateApp {
                     )
                 }
 
+                if *action == Action::CutPoint {
+                    dispatch_cmd!(
+                        id,
+                        ProgCmd::PointCut(id, (curr_pos.unwrap().0, curr_pos.unwrap().1)),
+                        {
+                            paint.vline(
+                                pos.x,
+                                canvas.rect.min.y..=canvas.rect.max.y,
+                                (2.0, Color32::RED),
+                            );
+                            paint.hline(
+                                canvas.rect.min.x..=canvas.rect.max.x,
+                                pos.y,
+                                (2.0, Color32::RED),
+                            );
+                        }
+                    )
+                }
+
                 if *action == Action::Color {
                     if ctx.input().modifiers.ctrl {
                         if ctx.input().pointer.primary_clicked() {

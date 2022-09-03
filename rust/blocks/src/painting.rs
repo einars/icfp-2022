@@ -51,6 +51,15 @@ impl Painting {
                 self.blocks.push(b1);
                 self.blocks.push(b2);
             },
+            PointCut(id, at) => {
+                let idx = self.get_block_idx(id)?;
+                let block = self.blocks.swap_remove(idx);
+                let [b1, b2, b3, b4] = block.cut_point(*at)?;
+                self.blocks.push(b1);
+                self.blocks.push(b2);
+                self.blocks.push(b3);
+                self.blocks.push(b4);
+            },
             Color(id, color) => {
                 let idx = self.get_block_idx(id)?;
                 let block = &self.blocks[idx];
