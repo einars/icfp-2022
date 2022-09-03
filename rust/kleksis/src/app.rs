@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use blocks::*;
 use egui::{Color32, Painter, Rgba, TextEdit};
 use egui_extras::RetainedImage;
@@ -12,6 +14,9 @@ pub struct TemplateApp {
     current: Painting,
 
     cmd_history: Vec<ProgCmd>,
+
+    next_cmd: Option<ProgCmd>,
+    next: Painting,
 }
 
 #[derive(Debug, PartialEq)]
@@ -30,8 +35,9 @@ impl TemplateApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customized the look at feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+        let file_name = std::env::args().nth(1).expect("Specify problem file to load as cmd arg");
         let (size_img, pixels) =
-            load_image_from_path(std::path::Path::new("../../problems/1.png")).unwrap();
+            load_image_from_path(std::path::Path::new(&file_name)).unwrap();
         let size = (size_img[0] as u32, size_img[1] as u32);
 
         Self {
@@ -41,6 +47,8 @@ impl TemplateApp {
             target: pixels,
             current: Painting::new(size),
             cmd_history: vec![],
+            next_cmd: None,
+            next: Painting::new(size),
         }
     }
 }
@@ -55,6 +63,8 @@ impl eframe::App for TemplateApp {
             target,
             current,
             cmd_history,
+            next_cmd,
+            next,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -100,13 +110,33 @@ impl eframe::App for TemplateApp {
 
                 ui.heading("Scoring");
                 ui.horizontal(|ui| {
-                    let score = compadre::compare(current.image.as_flat_samples().as_slice(), target.as_flat_samples_mut().as_slice());
+                    let score = compadre::compare(
+                        current.image.as_flat_samples().as_slice(),
+                        target.as_flat_samples_mut().as_slice(),
+                    );
+                    let score_next = compadre::compare(
+                        next.image.as_flat_samples().as_slice(),
+                        target.as_flat_samples_mut().as_slice(),
+                    );                    
                     ui.label("Score: ");
-                    ui.colored_label(Color32::GREEN, score.to_string());
+                    ui.label(score.to_string());
+                    match score_next as i32 - score as i32 {
+                        diff  if diff < 0 => {
+                            ui.colored_label(Color32::GREEN, diff.to_string());
+                        },
+                        diff if diff > 0 => {
+                            ui.colored_label(Color32::RED, diff.to_string());
+                        },
+                        _ => ()
+                    }
                 });
                 ui.horizontal(|ui| {
+                    let mut cost = 0;
+                    if let Some(cmd) = next_cmd {
+                        cost = compadre::calc_cmd_score(cmd, current).unwrap_or_default();
+                    }
                     ui.label("Cost: ");
-                    ui.colored_label(Color32::GREEN, "0");
+                    ui.label(cost.to_string());
                 });
 
                 ui.heading("Program");
@@ -162,11 +192,16 @@ impl eframe::App for TemplateApp {
                         pos.y,
                         (2.0, Color32::RED),
                     );
-                    if ctx.input().pointer.primary_clicked() {
-                        if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                            let cmd = ProgCmd::LineCut(id, CutDirection::Y, curr_pos.unwrap().1);
-                            if let Some(_) = current.apply_cmd(&cmd).ok() {
-                                cmd_history.push(cmd);
+                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                        *next_cmd =
+                            Some(ProgCmd::LineCut(id, CutDirection::Y, curr_pos.unwrap().1));
+                        if let Some(cmd) = next_cmd {
+                            *next = current.clone();
+                            if let Some(_) = next.apply_cmd(cmd).ok() {
+                                if ctx.input().pointer.primary_clicked() {
+                                    current.apply_cmd(cmd).unwrap();
+                                    cmd_history.push(cmd.clone());
+                                }
                             }
                         }
                     }
@@ -178,22 +213,31 @@ impl eframe::App for TemplateApp {
                         canvas.rect.min.y..=canvas.rect.max.y,
                         (2.0, Color32::RED),
                     );
-                    if ctx.input().pointer.primary_clicked() {
-                        if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                            let cmd = ProgCmd::LineCut(id, CutDirection::X, curr_pos.unwrap().0);
-                            if let Some(_) = current.apply_cmd(&cmd).ok() {
-                                cmd_history.push(cmd);
+                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                        *next_cmd =
+                            Some(ProgCmd::LineCut(id, CutDirection::X, curr_pos.unwrap().0));
+                        if let Some(cmd) = next_cmd {
+                            *next = current.clone();
+                            if let Some(_) = next.apply_cmd(cmd).ok() {
+                                if ctx.input().pointer.primary_clicked() {
+                                    current.apply_cmd(cmd).unwrap();
+                                    cmd_history.push(cmd.clone());
+                                }
                             }
                         }
                     }
                 }
 
                 if *action == Action::Color {
-                    if ctx.input().pointer.primary_clicked() {
-                        if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
-                            let cmd = ProgCmd::Color(id, parser::Color(*color));
-                            if let Some(_) = current.apply_cmd(&cmd).ok() {
-                                cmd_history.push(cmd);
+                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                        *next_cmd = Some(ProgCmd::Color(id, parser::Color(*color)));
+                        if let Some(cmd) = next_cmd {
+                            *next = current.clone();
+                            if let Some(_) = next.apply_cmd(cmd).ok() {
+                                if ctx.input().pointer.primary_clicked() {
+                                    current.apply_cmd(cmd).unwrap();
+                                    cmd_history.push(cmd.clone());
+                                }
                             }
                         }
                     }
