@@ -4,7 +4,7 @@
 use parser::*;
 
 pub mod painting;
-pub use painting::Painting;
+pub use painting::{Painting, PaintError};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
