@@ -224,7 +224,7 @@ impl Block {
         wrapped_id
     }
 
-    fn is_adjacent(&self, other: &Block) -> Result<(), BlockError> {
+    pub fn is_adjacent(&self, other: &Block) -> Result<(), BlockError> {
         if !is_adjacent_low_level_x(self, other)
             && !is_adjacent_low_level_y(self, other)
             && !is_adjacent_low_level_x(other, self)

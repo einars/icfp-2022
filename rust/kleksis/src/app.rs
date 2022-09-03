@@ -20,6 +20,8 @@ pub struct TemplateApp<'a> {
 
     code: String,
     code_error: String,
+
+    origin_block: Option<BlockId>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -55,6 +57,7 @@ impl<'a> TemplateApp<'a> {
             next: Painting::new(size),
             code: "".to_string(),
             code_error: "".to_string(),
+            origin_block: None,
         }
     }
 }
@@ -73,6 +76,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
             next,
             code,
             code_error,
+            origin_block,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -172,7 +176,11 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     ui.horizontal(|ui| {
                         if ui.add(egui::Button::new("Apply")).clicked() {
                             *code_error = "".to_string();
-                            *cmd_history = parser::source_to_tree(code);
+                            match parser::source_to_tree(code) {
+                                Ok(cmds) => {*cmd_history = cmds;}
+                                Err(err) => { *code_error = format!("Error parsing code: {err:?}"); }
+                            }
+                            
                             match Painting::from_program(current.size, &cmd_history) {
                                 Ok(prog) => *current = prog,
                                 Err(err) => {
@@ -331,6 +339,33 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     } else {
                         dispatch_cmd!(id, ProgCmd::Color(id, parser::Color(*color)), {});
                     }
+                }
+              
+                if *action == Action::Merge {
+                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                        *origin_block = Some(id);
+                    }
+
+                    if let Some(id1) = origin_block {
+                        if let Ok(block) = current.get_block(id1) {
+                            if ctx.input().modifiers.ctrl {
+                                if let Some(id2) = pos_to_block(&canvas.rect, pos, current) {
+                                    let block2 = current.get_block(&id2).unwrap();
+                                    if *block != *block2 && block.is_adjacent(block2).is_ok() {
+                                        paint.rect_stroke(block_rect(block2, current.size, &canvas.rect), 0.0, (2.0, Color32::BLUE));
+                                        dispatch_cmd!(id, ProgCmd::Merge(id, id1.clone()), {})
+                                    }                                    
+                                }                                                                
+                            }
+                            paint.rect_stroke(block_rect(block, current.size, &canvas.rect), 0.0, (2.0, Color32::BLUE));
+                        }
+                    }
+                    
+                    
+
+                    //dispatch_cmd! (id, ProgCmd::Merge(id, id1), {
+
+                    //})
                 }
             }
 
