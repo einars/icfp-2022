@@ -1,6 +1,7 @@
 (ql:quickload "png-read")
 
 (defconstant +components+ 4)
+(defconstant +half-pool+ 5)
 
 (defvar *target* nil)
 (defvar *canvas* nil)
@@ -15,6 +16,8 @@
 
 (defvar *pnm* "canvas.pnm")
 (defvar *txt* "result.txt")
+
+(defvar *best* most-positive-fixnum)
 
 (declaim (ftype function print-pos))
 (defstruct (pos (:print-function (lambda (b s d) (print-pos b s d))))
@@ -435,7 +438,8 @@
     (let ((victim (random-elt places)))
       (if (vectorp victim)
 	  (mutate-color victim)
-	  (mutate-number victim)))))
+	  (mutate-number victim)))
+    program))
 
 (defun copy-color (color-cmd)
   (setf (third color-cmd) (copy-seq (third color-cmd))))
@@ -462,7 +466,34 @@
 	(*boxnum* 0))
     (dolist (i program)
       (execute-cmd i))
-    (format t "SCORE:~A~%" (score))))
+    (let ((score (score)))
+      (when (< score *best*)
+	(format t "BEST:~A~%" score)
+	(setf *best* score)
+	(save-program)
+	(save-canvas))
+      (list score *program*))))
+
+(defun new-mutation (program)
+  (random-tweak-program
+   (copy-and-reverse-program program)))
+
+(defun create-program-pool (program)
+  (let ((pool nil))
+    (dotimes (i (* 2 +half-pool+))
+      (push (list (score) program) pool))
+    pool))
+
+(defun execute-contestant (x)
+  (execute-program (new-mutation (second x))))
+
+(defun optimize-program (program)
+  (let ((*best* (score))
+	(pool (create-program-pool program)))
+    (loop (setf pool (sort pool #'> :key #'first))
+	  (dotimes (i +half-pool+)
+	    (let ((done (execute-contestant (elt pool i))))
+	      (setf (elt pool i) done))))))
 
 (defun painter (i x y)
   (let* ((file (format nil "../problems/~A.png" i))
@@ -478,9 +509,10 @@
 	 (*allbox* (empty-allbox))
 	 (*boxnum* 0))
     (run-mosaic-program-solver x y)
-;    (format t "N(~A,~A): SCORE:~A~%" x y (score))
+    (format t "N(~A,~A): SCORE:~A~%" x y (score))
     (save-program)
     (save-canvas)
+    (optimize-program *program*)
     (score)))
 
 (defun paint-all (i &key (lo 2.0) (hi 12.0) (step 0.1))
