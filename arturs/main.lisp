@@ -114,7 +114,7 @@
   (make-shape :pos *zero* :size (make-pos :x *image-w* :y *image-h*)))
 
 (defun full-canvas-box ()
-  (make-box :id 0 :color *white* :shape (full-canvas-shape)))
+  (make-box :id '(0) :color *white* :shape (full-canvas-shape)))
 
 (defun empty-allbox ()
   (make-box :children (list (full-canvas-box))))
@@ -147,15 +147,12 @@
 (defun score ()
   (+ (cost) (similarity)))
 
-(defun find-child (id node)
-  (let ((id-one (first id))
-	(children (box-children node)))
-    (first (member-if (lambda (x) (= id-one (box-id x))) children))))
-
 (defun find-box (id &optional (node *allbox*))
-  (if (consp id)
-      (find-box (rest id) (find-child id node))
-      node))
+  (cond ((equalp id (box-id node)) node)
+	(t (dolist (i (box-children node))
+	     (let ((result (find-box id i)))
+	       (when (box-p result)
+		 (return-from find-box result)))))))
 
 (defun box-by-pos (pos &optional (node *allbox*))
   (let ((children (box-children node)))
@@ -163,14 +160,6 @@
 	  (t (dolist (b children)
 	       (when (pos-in-shape pos (box-shape b))
 		 (return-from box-by-pos (box-by-pos pos b))))))))
-
-(defun box-to-id-reverse (box)
-  (if (not (null box))
-      (cons (box-id box) (box-to-id-reverse (box-parent box)))
-      nil))
-
-(defun box-to-id (box)
-  (nreverse (box-to-id-reverse box)))
 
 (defun split-shape (shape num set add)
   (let ((pos (shape-pos shape))
@@ -185,9 +174,15 @@
 (defun split-shape-y (shape y)
   (split-shape shape (- y (shape-y shape)) #'pos-set-y #'pos-add-y))
 
+(defun extend-id (parent id-postfix)
+  (append (box-id parent) (list id-postfix)))
+
+(defun make-child (id-postfix parent shape)
+  (make-box :id (extend-id parent id-postfix) :parent parent :shape shape))
+
 (defun lsplit (parent axis num)
   (let ((id -1) (parent-shape (box-shape parent)))
-    (mapcar (lambda (s) (make-box :id (incf id) :parent parent :shape s))
+    (mapcar (lambda (shape) (make-child (incf id) parent shape))
 	    (cond ((eq 'x axis) (split-shape-x parent-shape num))
 		  ((eq 'y axis) (split-shape-y parent-shape num))))))
 
@@ -237,7 +232,7 @@
 (defun swap (box1 box2)
   (when (not (pos-eq (box-size box1) (box-size box2)))
     (error "box sizes for swap is not equal"))
-  (push `(:swap ,box1 ,box2 ,(box-to-id box1) ,(box-to-id box2)) *program*)
+  (push `(:swap ,box1 ,box2) *program*)
   (let ((parent1 (box-parent box1))
 	(parent2 (box-parent box2))
 	(diff1 (box-diff box1 box2))
@@ -246,11 +241,8 @@
     (replace-parent box2 box1 diff2 parent2))
   (swap-pixels box1 box2))
 
-(defun format-raw-id (id)
-  (format nil "~{~A~^.~}" id))
-
 (defun format-id (box)
-  (format-raw-id (box-to-id box)))
+  (format nil "~{~A~^.~}" (box-id box)))
 
 (defun format-color (color)
   (format nil "~{~A~^,~}" (coerce color 'list)))
@@ -262,8 +254,8 @@
 
 (defun format-swap-command (out cmd)
   (format out "swap [~A] [~A]~%"
-	  (format-raw-id (fourth cmd))
-	  (format-raw-id (fifth cmd))))
+	  (format-id (second cmd))
+	  (format-id (third cmd))))
 
 (defun format-color-command (out cmd)
   (format out "color [~A] [~A]~%"
@@ -307,8 +299,6 @@
 	    (box-by-pos (make-pos :x x :y (+ y 40))))))
   (color (box-by-pos (make-pos :x 340 :y 60))
          (make-color 0 74 173 255)))
-
-
 
 (defun painter (file)
   (let* ((png (png-read:read-png-file file))
