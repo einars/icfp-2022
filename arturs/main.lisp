@@ -461,7 +461,8 @@
 	(*allbox* (empty-allbox))
 	(*boxnum* 0))
     (dolist (i program)
-      (execute-cmd i))))
+      (execute-cmd i))
+    (format t "SCORE:~A~%" (score))))
 
 (defun painter (i x y)
   (let* ((file (format nil "../problems/~A.png" i))
@@ -477,7 +478,7 @@
 	 (*allbox* (empty-allbox))
 	 (*boxnum* 0))
     (run-mosaic-program-solver x y)
-;    (format t "N(~A): SCORE:~A~%" n (score))
+;    (format t "N(~A,~A): SCORE:~A~%" x y (score))
     (save-program)
     (save-canvas)
     (score)))
