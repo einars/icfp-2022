@@ -302,6 +302,6 @@ fn block_rect(block: &Block, size: (u32, u32), cr: &egui::Rect) -> egui::Rect {
 fn pos_to_block(cr: &egui::Rect, pos: egui::Pos2, painting: &Painting) -> Option<BlockId> {
     painting.block_by_pos((
         (pos.x - cr.min.x) as u32,
-        painting.size.1 - (pos.y - cr.min.y) as u32 - 1,
+        std::cmp::max(painting.size.1 - (pos.y - cr.min.y) as u32, 1) - 1,
     ))
 }
