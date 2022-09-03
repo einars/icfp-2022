@@ -138,6 +138,7 @@
 	    (case (first cmd)
 	      (:swap 3)
 	      (:lcut 7)
+	      (:pcut 10)
 	      (:color 5)
 	      (otherwise 0)))))
 
@@ -180,16 +181,32 @@
 (defun make-child (id-postfix parent shape)
   (make-box :id (extend-id parent id-postfix) :parent parent :shape shape))
 
-(defun lsplit (parent axis num)
+(defun l-split (parent axis num)
   (let ((id -1) (parent-shape (box-shape parent)))
     (mapcar (lambda (shape) (make-child (incf id) parent shape))
 	    (cond ((eq 'x axis) (split-shape-x parent-shape num))
 		  ((eq 'y axis) (split-shape-y parent-shape num))))))
 
+(defun split-shape-4 (shape x y)
+  (let ((slice (split-shape-y shape y)))
+    (append (split-shape-x (first slice) x)
+	    (nreverse (split-shape-x (second slice) x)))))
+
+(defun p-split (parent x y)
+  (let ((id -1) (parent-shape (box-shape parent)))
+    (mapcar (lambda (shape) (make-child (incf id) parent shape))
+	    (split-shape-4 parent-shape x y))))
+
 (defun lcut (box axis num)
   (when (consp (box-children box)) (error "box already have children"))
-  (setf (box-children box) (lsplit box axis num))
+  (setf (box-children box) (l-split box axis num))
   (push `(:lcut ,box ,axis ,num) *program*)
+  (box-children box))
+
+(defun pcut (box x y)
+  (when (consp (box-children box)) (error "box already have children"))
+  (setf (box-children box) (p-split box x y))
+  (push `(:pcut ,box ,x ,y) *program*)
   (box-children box))
 
 (defun set-pixel (shape x y color)
@@ -247,8 +264,13 @@
 (defun format-color (color)
   (format nil "~{~A~^,~}" (coerce color 'list)))
 
-(defun format-cut-command (out cmd)
+(defun format-lcut-command (out cmd)
   (format out "cut [~A] [~A] [~A]~%"
+	  (format-id (second cmd))
+	  (third cmd) (fourth cmd)))
+
+(defun format-pcut-command (out cmd)
+  (format out "cut [~A] [~A,~A]~%"
 	  (format-id (second cmd))
 	  (third cmd) (fourth cmd)))
 
@@ -264,7 +286,8 @@
 
 (defun save-command (out cmd)
   (case (first cmd)
-    (:lcut (format-cut-command out cmd))
+    (:lcut (format-lcut-command out cmd))
+    (:pcut (format-pcut-command out cmd))
     (:swap (format-swap-command out cmd))
     (:color (format-color-command out cmd))
     (otherwise nil)))
