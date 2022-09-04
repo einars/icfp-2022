@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $1 -le 0 || $1 -gt 25 ]]; then
+if [[ $1 -le 0 || $1 -gt 35 ]]; then
     echo ARG Please!
     exit
 fi
