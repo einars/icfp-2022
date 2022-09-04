@@ -485,7 +485,7 @@
 (defun box-by-x-y (x y)
   (box-by-pos (pos-new x y)))
 
-(defun vertical-weaver (p-w p-h)
+(defun vertical-weaver-with-lcut (p-w p-h)
   (let ((stepx (floor (/ *image-w* p-w)))
 	(stepy (floor (/ *image-h* p-h))))
     (loop for y from 0 to (- *image-h* stepy) by stepy do
@@ -504,9 +504,30 @@
 		(box-merge product (first children1))
 		(apply #'box-merge children1))))))))
 
+(defun vertical-weaver-with-pcut (p-w p-h)
+  (let ((stepx (floor (/ *image-w* p-w)))
+	(stepy (floor (/ *image-h* p-h))))
+    (loop for y from 0 to (- *image-h* stepy) by stepy do
+      (loop for x from 0 to (- *image-w* stepx) by stepx do
+	(let (children product)
+	  (when (and (> y 0) (= x 0))
+	    (setf children (lcut (box-by-x-y x y) 'y y)))
+	  (when (and (> x 0) (= y 0))
+	    (setf children (lcut (box-by-x-y x y) 'x x)))
+	  (when (and (> x 0) (> y 0))
+	    (setf children (pcut (box-by-x-y x y) x y)))
+	  (let ((box (box-by-x-y x y)))
+	    (color box (calc-color box p-w p-h)))
+	  (when (and children (or (= x 0) (= y 0)))
+	    (apply #'box-merge children))
+	  (when (and (> x 0) (> y 0))
+	    (push (box-merge (first children) (second children)) product)
+	    (push (box-merge (third children) (fourth children)) product)
+	    (box-merge (first product) (second product))))))))
+
 (defun run-mosaic-program-solver (x y)
-;  (vertical-weaver x y))
-  (horizontal-shreader x y))
+  (vertical-weaver-with-pcut x y))
+;  (horizontal-shreader x y))
 
 (defun random-elt (l)
   (elt l (random (length l))))
