@@ -1594,6 +1594,7 @@ dependencies = [
 name = "rastaman"
 version = "0.1.0"
 dependencies = [
+ "compadre",
  "eframe",
  "egui",
  "egui_extras",

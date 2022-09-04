@@ -19,6 +19,7 @@ pub struct TemplateApp {
     criterion: DTCriterion,
     search_depth: u16,
     save_name: String,
+    score: u32,
 }
 
 impl TemplateApp {
@@ -41,6 +42,7 @@ impl TemplateApp {
             criterion: DTCriterion::Gini,
             search_depth: 10,
             save_name: format!("{file_name}.rasta.png"),
+            score: 0,
         }
     }
 }
@@ -56,6 +58,7 @@ impl eframe::App for TemplateApp {
             criterion,
             search_depth,
             save_name,
+            score,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -78,6 +81,11 @@ impl eframe::App for TemplateApp {
         egui::SidePanel::left("side_panel")
             .min_width(200.0)
             .show(ctx, |ui| {
+                ui.heading("Max score");
+                ui.horizontal(|ui| {
+                    ui.label("Maximum possible score: ");
+                    ui.colored_label(Color32::GREEN, score.to_string());
+                });
                 ui.heading("Decision Tree settings");
                 egui::ComboBox::from_label("Split Criterion")
                     .selected_text(format!("{:?}", criterion))
@@ -101,6 +109,12 @@ impl eframe::App for TemplateApp {
                                 }
                             });
                     *result = Some(rasterizer.rasterize(&target).unwrap());
+                    if let Some(img) = result {
+                    *score = compadre::compare(
+                        img.as_flat_samples().as_slice(),
+                        target.as_flat_samples_mut().as_slice(),
+                    );
+                }
                 }
 
                 if let Some(img) = result {
