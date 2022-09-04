@@ -22,6 +22,9 @@
 
 (defvar *best* most-positive-fixnum)
 
+(defparameter *lcut-price* 7)
+(defparameter *pcut-price* 10)
+
 (declaim (ftype function print-pos))
 (defstruct (pos (:print-function (lambda (b s d) (print-pos b s d))))
   x y)
@@ -189,9 +192,9 @@
   (round (* (box-cost (second cmd))
 	    (case (first cmd)
 	      (:swap 3)
-	      (:lcut 7)
-	      (:pcut 10)
 	      (:merge 1)
+	      (:lcut *lcut-price*)
+	      (:pcut *pcut-price*)
 	      (:color (color-score cmd))
 	      (otherwise 0)))))
 
@@ -680,6 +683,9 @@
 (defun later-problem ()
   (> *problem* 25))
 
+(defun final-problem ()
+  (> *problem* 35))
+
 (defun load-canvas ()
   (let* ((file (format nil "../problems/~A.initial.png" *problem*))
 	 (png (png-read:read-png-file file)))
@@ -720,6 +726,9 @@
       (otherwise nil))))
 
 (defun choose-solver (input-file x y)
+  (when (final-problem)
+    (setf *lcut-price* 2)
+    (setf *lcut-price* 3))
   (cond ((later-problem)
 	 (run-later-solver input-file x y))
 	((probe-file input-file)
