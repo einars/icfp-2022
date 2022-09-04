@@ -217,7 +217,7 @@ impl Block {
         Ok(())
     }
 
-    fn sub_id(&self, id: u32) -> BlockId {
+    pub fn sub_id(&self, id: u32) -> BlockId {
         let mut wrapped_id = self.id.clone();
         let BlockId(ref mut new_id) = wrapped_id;
         new_id.push(id);

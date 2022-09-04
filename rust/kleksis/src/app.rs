@@ -5,7 +5,6 @@ use egui::{Color32, Painter, Rgba, TextEdit};
 use egui_extras::RetainedImage;
 use parser::{BlockId, CutDirection, ProgCmd};
 
-
 pub struct TemplateApp<'a> {
     action: Action,
     color: [u8; 4],
@@ -15,8 +14,9 @@ pub struct TemplateApp<'a> {
     current: Painting<'a>,
 
     cmd_history: Vec<ProgCmd>,
+    tot_cost: u32,
 
-    next_cmd: Option<ProgCmd>,
+    next_cmd: Vec<ProgCmd>,
     next: Painting<'a>,
 
     code: String,
@@ -34,6 +34,9 @@ enum Action {
     Merge,
     Color,
     AvgColor,
+    OCutVert,
+    OCutHoriz,
+    OCutPoint,
 }
 
 impl<'a> TemplateApp<'a> {
@@ -55,7 +58,8 @@ impl<'a> TemplateApp<'a> {
             target: pixels,
             current: Painting::new(size),
             cmd_history: vec![],
-            next_cmd: None,
+            tot_cost: 0,
+            next_cmd: vec![],
             next: Painting::new(size),
             code: "".to_string(),
             code_error: "".to_string(),
@@ -74,6 +78,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
             target,
             current,
             cmd_history,
+            tot_cost,
             next_cmd,
             next,
             code,
@@ -108,6 +113,9 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 ui.radio_value(action, Action::CutPoint, "Cut Point (p)");
                 ui.radio_value(action, Action::Color, "Color (c)");
                 ui.radio_value(action, Action::AvgColor, "AvgColor (a)");
+                ui.radio_value(action, Action::OCutHoriz, "O-cut Horiz. (C-h)");
+                ui.radio_value(action, Action::OCutVert, "O-cut Vert. (C-v)");
+                ui.radio_value(action, Action::OCutPoint, "O-cut Point (C-p)");
                 ui.radio_value(action, Action::Swap, "Swap (s)");
                 ui.radio_value(action, Action::Merge, "Merge (m)");
 
@@ -125,6 +133,15 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 }
                 if ctx.input().key_pressed(egui::Key::A) {
                     *action = Action::AvgColor
+                }
+                if ctx.input().key_pressed(egui::Key::H) && ctx.input().modifiers.ctrl {
+                    *action = Action::OCutHoriz
+                }
+                if ctx.input().key_pressed(egui::Key::V) && ctx.input().modifiers.ctrl {
+                    *action = Action::OCutVert
+                }
+                if ctx.input().key_pressed(egui::Key::P) && ctx.input().modifiers.ctrl {
+                    *action = Action::OCutPoint
                 }
                 if ctx.input().key_pressed(egui::Key::S) {
                     *action = Action::Swap
@@ -174,12 +191,18 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     }
                 });
                 ui.horizontal(|ui| {
-                    let mut cost = 0;
-                    if let Some(cmd) = next_cmd {
-                        cost = compadre::calc_cmd_score(cmd, current).unwrap_or_default();
-                    }
+                    let mut next_temp = current.clone();
+                    let cost: u32 = next_cmd
+                        .iter()
+                        .map(|cmd| {
+                            let cost = compadre::calc_cmd_score(cmd, &next_temp).unwrap();
+                            let _ = next_temp.apply_cmd(cmd);
+                            cost
+                        })
+                        .sum();
                     ui.label("Cost: ");
-                    ui.label(cost.to_string());
+                    ui.label(tot_cost.to_string());
+                    ui.colored_label(Color32::RED, cost.to_string());
                 });
 
                 ui.heading("Program");
@@ -263,17 +286,21 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     ($id:ident, $cmd:expr, $init:block) => {{
                         $init
                         if let Some($id) = pos_to_block(&canvas.rect, pos, current) {
-                            *next_cmd =
-                                Some($cmd);
-                            if let Some(cmd) = next_cmd {
-                                *next = current.clone();
-                                if let Some(_) = next.apply_cmd(cmd).ok() {
-                                    if ctx.input().pointer.primary_clicked() {
+                            *next_cmd = $cmd;
+                            *next = current.clone();
+                            let next_ok = next_cmd.iter().all(|cmd| {
+                                next.apply_cmd(cmd).is_ok()
+                            });
+                            if next_ok {
+                                if ctx.input().pointer.primary_clicked() {
+                                    for cmd in next_cmd.iter() {
+                                        *tot_cost += compadre::calc_cmd_score(cmd, &current).unwrap();
                                         current.apply_cmd(cmd).unwrap();
                                         cmd_history.push(cmd.clone());
                                         *code = parser::tree_to_source(cmd_history);
                                         *code_error = "".to_string();
                                     }
+                                    *next_cmd = vec![];
                                 }
                             }
                         }
@@ -283,7 +310,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 if *action == Action::CutHoriz {
                     dispatch_cmd!(
                         id,
-                        ProgCmd::LineCut(id, CutDirection::Y, curr_pos.unwrap().1),
+                        vec![ProgCmd::LineCut(id, CutDirection::Y, curr_pos.unwrap().1)],
                         {
                             paint.hline(
                                 canvas.rect.min.x..=canvas.rect.max.x,
@@ -297,7 +324,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 if *action == Action::CutVert {
                     dispatch_cmd!(
                         id,
-                        ProgCmd::LineCut(id, CutDirection::X, curr_pos.unwrap().0),
+                        vec![ProgCmd::LineCut(id, CutDirection::X, curr_pos.unwrap().0)],
                         {
                             paint.vline(
                                 pos.x,
@@ -311,7 +338,10 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 if *action == Action::CutPoint {
                     dispatch_cmd!(
                         id,
-                        ProgCmd::PointCut(id, (curr_pos.unwrap().0, curr_pos.unwrap().1)),
+                        vec![ProgCmd::PointCut(
+                            id,
+                            (curr_pos.unwrap().0, curr_pos.unwrap().1)
+                        )],
                         {
                             paint.vline(
                                 pos.x,
@@ -331,10 +361,137 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
                         if let Ok(block) = current.get_block(&id) {
                             let color = calc_avgcolor(&block, target);
-                            dispatch_cmd!(id, ProgCmd::Color(id, color), {});
+                            dispatch_cmd!(id, vec![ProgCmd::Color(id, color)], {});
                         }
                     }
                 }
+
+                if *action == Action::OCutHoriz {
+                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                        if let Some(cpos) = curr_pos {
+                            if let Ok(block) = current.get_block(&id) {
+                                let mut next_temp = current.clone();
+                                if next_temp.apply_cmd(&ProgCmd::LineCut(id, CutDirection::Y, cpos.1)).is_ok() {
+                                    let cols = [
+                                        calc_avgcolor(
+                                            next_temp.get_block(&block.sub_id(0)).unwrap(),
+                                            target,
+                                        ),
+                                        calc_avgcolor(
+                                            next_temp.get_block(&block.sub_id(1)).unwrap(),
+                                            target,
+                                        ),
+                                    ];
+                                    dispatch_cmd!(
+                                        id,
+                                        vec![
+                                            ProgCmd::LineCut(id, CutDirection::Y, cpos.1),
+                                            ProgCmd::Color(block.sub_id(0), cols[0].clone()),
+                                            ProgCmd::Color(block.sub_id(1), cols[1].clone()),
+                                        ],
+                                        {
+                                            paint.hline(
+                                                canvas.rect.min.x..=canvas.rect.max.x,
+                                                pos.y,
+                                                (2.0, Color32::RED),
+                                            );
+                                        }
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if *action == Action::OCutVert {
+                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                        if let Some(cpos) = curr_pos {
+                            if let Ok(block) = current.get_block(&id) {
+                                let mut next_temp = current.clone();
+                                if next_temp.apply_cmd(&ProgCmd::LineCut(id, CutDirection::X, cpos.0)).is_ok() {
+                                    let cols = [
+                                        calc_avgcolor(
+                                            next_temp.get_block(&block.sub_id(0)).unwrap(),
+                                            target,
+                                        ),
+                                        calc_avgcolor(
+                                            next_temp.get_block(&block.sub_id(1)).unwrap(),
+                                            target,
+                                        ),
+                                    ];
+                                    dispatch_cmd!(
+                                        id,
+                                        vec![
+                                            ProgCmd::LineCut(id, CutDirection::X, cpos.0),
+                                            ProgCmd::Color(block.sub_id(0), cols[0].clone()),
+                                            ProgCmd::Color(block.sub_id(1), cols[1].clone()),
+                                        ],
+                                        {
+                                            paint.vline(
+                                                pos.x,
+                                                canvas.rect.min.y..=canvas.rect.max.y,
+                                                (2.0, Color32::RED),
+                                            );
+                                        }
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if *action == Action::OCutPoint {
+                    if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
+                        if let Some(cpos) = curr_pos {
+                            if let Ok(block) = current.get_block(&id) {
+                                let mut next_temp = current.clone();
+                                if next_temp.apply_cmd(&ProgCmd::PointCut(id, cpos)).is_ok() {
+                                    let cols = [
+                                        calc_avgcolor(
+                                            next_temp.get_block(&block.sub_id(0)).unwrap(),
+                                            target,
+                                        ),
+                                        calc_avgcolor(
+                                            next_temp.get_block(&block.sub_id(1)).unwrap(),
+                                            target,
+                                        ),
+                                        calc_avgcolor(
+                                            next_temp.get_block(&block.sub_id(2)).unwrap(),
+                                            target,
+                                        ),
+                                        calc_avgcolor(
+                                            next_temp.get_block(&block.sub_id(3)).unwrap(),
+                                            target,
+                                        ),
+                                    ];
+                                    dispatch_cmd!(
+                                        id,
+                                        vec![
+                                            ProgCmd::PointCut(id, cpos),
+                                            ProgCmd::Color(block.sub_id(0), cols[0].clone()),
+                                            ProgCmd::Color(block.sub_id(1), cols[1].clone()),
+                                            ProgCmd::Color(block.sub_id(2), cols[2].clone()),
+                                            ProgCmd::Color(block.sub_id(3), cols[3].clone()),
+                                        ],
+                                        {
+                                            paint.vline(
+                                                pos.x,
+                                                canvas.rect.min.y..=canvas.rect.max.y,
+                                                (2.0, Color32::RED),
+                                            );
+                                            paint.hline(
+                                                canvas.rect.min.x..=canvas.rect.max.x,
+                                                pos.y,
+                                                (2.0, Color32::RED),
+                                            );
+                                        }
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
                 if *action == Action::Color {
                     if ctx.input().modifiers.ctrl {
                         if ctx.input().pointer.primary_clicked() {
@@ -360,7 +517,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                             }
                         }
                     } else {
-                        dispatch_cmd!(id, ProgCmd::Color(id, parser::Color(*color)), {});
+                        dispatch_cmd!(id, vec![ProgCmd::Color(id, parser::Color(*color))], {});
                     }
                 }
 
@@ -384,7 +541,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                                             0.0,
                                             (2.0, Color32::RED),
                                         );
-                                        dispatch_cmd!(id, ProgCmd::Merge(id, id1.clone()), {})
+                                        dispatch_cmd!(id, vec![ProgCmd::Merge(id, id1.clone())], {})
                                     }
                                 }
                             }
@@ -395,10 +552,6 @@ impl<'a> eframe::App for TemplateApp<'a> {
                             );
                         }
                     }
-
-                    //dispatch_cmd! (id, ProgCmd::Merge(id, id1), {
-
-                    //})
                 }
             }
 
@@ -487,4 +640,3 @@ fn calc_avgcolor(b: &Block, i: &image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) ->
         (sa / area) as u8,
     ])
 }
-
