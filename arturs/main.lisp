@@ -693,8 +693,8 @@
     (convert-image png)))
 
 (defun read-canvas ()
-  (if (and (later-problem)
-	   (final-problem))
+  (if (or (later-problem)
+	  (final-problem))
       (load-canvas)
       (empty-canvas)))
 
