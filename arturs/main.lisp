@@ -692,7 +692,8 @@
     (convert-image png)))
 
 (defun read-canvas ()
-  (if (later-problem)
+  (if (and (later-problem)
+	   (final-problem))
       (load-canvas)
       (empty-canvas)))
 
@@ -729,7 +730,7 @@
   (when (final-problem)
     (setf *lcut-price* 2)
     (setf *lcut-price* 3))
-  (cond ((later-problem)
+  (cond ((and (later-problem) (not (final-problem)))
 	 (run-later-solver input-file x y))
 	((probe-file input-file)
 	 (load-program input-file))
