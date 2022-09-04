@@ -1,7 +1,5 @@
-use std::cell::Cell;
-
 use blocks::*;
-use egui::{Color32, Painter, Rgba, TextEdit};
+use egui::{Color32, Painter, TextEdit};
 use egui_extras::RetainedImage;
 use parser::{BlockId, CutDirection, ProgCmd};
 use rstats::VecVec;
