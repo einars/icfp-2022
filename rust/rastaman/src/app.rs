@@ -18,6 +18,7 @@ pub struct TemplateApp {
     size: (u32, u32),
     criterion: DTCriterion,
     search_depth: u16,
+    save_name: String,
 }
 
 impl TemplateApp {
@@ -39,6 +40,7 @@ impl TemplateApp {
             size: size,
             criterion: DTCriterion::Gini,
             search_depth: 10,
+            save_name: format!("{file_name}.rasta.png"),
         }
     }
 }
@@ -53,6 +55,7 @@ impl eframe::App for TemplateApp {
             size,
             criterion,
             search_depth,
+            save_name,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -98,6 +101,14 @@ impl eframe::App for TemplateApp {
                                 }
                             });
                     *result = Some(rasterizer.rasterize(&target).unwrap());
+                }
+
+                if let Some(img) = result {
+                    ui.heading("Save");
+                    ui.text_edit_singleline(save_name);
+                    if ui.button("Save").clicked() {
+                        img.save(save_name).unwrap();
+                    }    
                 }
             });
 
