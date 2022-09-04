@@ -463,17 +463,26 @@
     (setf (elt victim index) (clamp (random-jerk (elt victim index))))
     victim))
 
+(defun flip-coin ()
+  (= 0 (random 2)))
+
 (defun pick-color-arg (c)
   (let ((disabled (fourth c)))
-    (if (or disabled (= 0 (random 2)))
+    (if (or disabled (flip-coin))
 	(rest (rest (rest c)))
 	(third c))))
+
+(defun pick-pcut-arg (c)
+  (if (flip-coin)
+      (rest (rest c))
+      (rest (rest (rest c)))))
 
 (defun random-tweak-program (program)
   (let ((places nil))
     (dolist (i program)
       (case (first i)
 	(:color (push (pick-color-arg i) places))
+	(:pcut (push (pick-pcut-arg i) places))
 	(:lcut (push (rest (rest (rest i))) places))
 	(otherwise nil)))
     (let ((victim (random-elt places)))
@@ -503,6 +512,7 @@
     (case (first cmd)
       (:color (color box (third cmd) (fourth cmd)))
       (:lcut (lcut box (third cmd) (fourth cmd)))
+      (:pcut (pcut box (third cmd) (fourth cmd)))
       (:swap (swap box (find-from-other (third cmd))))
       (otherwise (error "implement execute cmd")))))
 
@@ -622,8 +632,9 @@
       (empty-allbox)))
 
 (defun process-cut (box args)
-  (when (symbolp (second args))
-    (lcut box (second args) (first (third args)))))
+  (if (symbolp (second args))
+      (lcut box (second args) (first (third args)))
+      (pcut box (first (second args)) (second (second args)))))
 
 (defun process-color (box args)
   (color box (coerce (second args) 'vector)))
