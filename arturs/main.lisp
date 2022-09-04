@@ -680,11 +680,12 @@
 	(run-mosaic-program-solver x y)
 	(load-program input-file))))
 
-(defun later-problem ()
-  (> *problem* 25))
-
 (defun final-problem ()
   (> *problem* 35))
+
+(defun later-problem ()
+  (and (not (final-problem))
+       (> *problem* 25)))
 
 (defun load-canvas ()
   (let* ((file (format nil "../problems/~A.initial.png" *problem*))
@@ -730,7 +731,7 @@
   (when (final-problem)
     (setf *lcut-price* 2)
     (setf *lcut-price* 3))
-  (cond ((and (later-problem) (not (final-problem)))
+  (cond ((later-problem)
 	 (run-later-solver input-file x y))
 	((probe-file input-file)
 	 (load-program input-file))
