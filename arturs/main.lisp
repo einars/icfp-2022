@@ -152,14 +152,17 @@
 (defun component-distance (c1 c2 i)
   (expt (- (svref c1 i) (svref c2 i)) 2))
 
+(defun color-distance (c1 c2)
+  (let ((sum 0.0d0))
+    (dotimes (i +components+)
+      (incf sum (component-distance c1 c2 i)))
+    (sqrt sum)))
+
 (defun similarity (&optional (p1 *target*) (p2 *canvas*))
   (let ((score 0.0d0))
     (dotimes (y *image-h*)
       (dotimes (x *image-w*)
-	(let ((sum 0.0d0))
-	  (dotimes (i +components+)
-	    (incf sum (component-distance (aref p1 x y) (aref p2 x y) i)))
-	  (incf score (sqrt sum)))))
+	(incf score (color-distance (aref p1 x y) (aref p2 x y)))))
     (round (* 0.005 score))))
 
 (defun make-empty-program ()
