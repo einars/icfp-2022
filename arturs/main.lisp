@@ -544,6 +544,16 @@
 (defun later-problem (n)
   (> n 25))
 
+(defun load-canvas (i)
+  (let* ((file (format nil "../problems/~A.initial.png" i))
+	 (png (png-read:read-png-file file)))
+    (convert-image png)))
+
+(defun read-canvas (i)
+  (if (later-problem i)
+      (load-canvas i)
+      (empty-canvas)))
+
 (defun painter (i x y)
   (let* ((file (format nil "../problems/~A.png" i))
 	 (png (png-read:read-png-file file))
@@ -554,7 +564,7 @@
 	 (*image-h* (png-read:height png))
 	 (*surface* (* *image-w* *image-h*))
 	 (*target* (convert-image png))
-	 (*canvas* (empty-canvas))
+	 (*canvas* (read-canvas i))
 	 (*allbox* (empty-allbox))
 	 (*problem* i)
 	 (*boxnum* 0))
