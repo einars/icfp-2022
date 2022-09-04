@@ -183,7 +183,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                         .iter()
                         .map(|cmd| {
                             compadre::calc_cmd_score(cmd, &next_temp).map_or(0, |cost| {
-                                next_temp.apply_cmd(cmd).unwrap();
+                                let _ = next_temp.apply_cmd(cmd);
                                 cost
                             })
                         })
