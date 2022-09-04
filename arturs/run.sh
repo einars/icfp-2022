@@ -13,3 +13,5 @@ fi
 sbcl --noinform \
      --eval '(load "main.lisp")' \
      --eval "(top-level $1 $SIZE $SIZE)"
+
+# sbcl --load main.lisp --eval "(build)"

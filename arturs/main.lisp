@@ -810,7 +810,7 @@
       (optimize-program *program*))
     (score)))
 
-(defun top-level (i x y)
+(defun top-level (&optional (i 10) (x 8) (y 8))
   (handler-case (painter i x y)
     (condition (var) (format t "ERROR: ~A~%" var)))
   (uiop:quit 0))
@@ -830,3 +830,11 @@
   (loop for i from 1 to 25 do
     (format t "P:~A " i)
     (paint-all i)))
+
+(defun main ()
+  (apply #'top-level (mapcar #'parse-integer (rest sb-ext:*posix-argv*))))
+
+(defun build ()
+  (sb-ext:save-lisp-and-die
+   "./run" :compression t :executable t
+   :toplevel (function main)))
