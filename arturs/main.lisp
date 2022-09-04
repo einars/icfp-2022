@@ -372,7 +372,7 @@
 	   (= (- (pos-x pos2) (pos-x pos1)) (pos-x size1))
 	   (= (- (pos-x pos1) (pos-x pos2)) (pos-x size2)))))
 
-(defun merge-sanity-chexck (box1 box2)
+(defun merge-sanity-check (box1 box2)
   (let ((pos1 (box-pos box1))
 	(pos2 (box-pos box2))
 	(size1 (box-size box1))
