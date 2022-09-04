@@ -614,8 +614,19 @@
       (parse-json)
       (empty-allbox)))
 
+(defun process-cut (box args)
+  (when (symbolp (second args))
+    (lcut box (second args) (first (third args)))))
+
+(defun process-color (box args)
+  (color box (coerce (second args) 'vector)))
+
 (defun process (&rest args)
-  (format t "~A~%" args))
+  (let ((box (find-box (second args))))
+    (case (first args)
+      (cut (process-cut box (rest args)))
+      (color (process-color box (rest args)))
+      (otherwise nil))))
 
 (defun choose-solver (input-file x y)
   (cond ((later-problem)
