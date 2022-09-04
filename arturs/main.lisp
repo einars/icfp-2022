@@ -532,17 +532,25 @@
 (defun json-place-to-pos (p key)
   (list-to-pos (rest (assoc key p))))
 
-(defun parse-json ()
+(defun json-block-id (p)
+  (list (parse-integer (rest (assoc :block-id p)))))
+
+(defun parse-json-into (allbox)
   (dolist (p (rest (third (read-json *problem*))))
-    (let ((id (list (rest (assoc :block-id p))))
+    (let ((id (json-block-id p))
 	  (pos (json-place-to-pos p :bottom-left))
 	  (top (json-place-to-pos p :top-right)))
       (setf *boxnum* (max *boxnum* (first id)))
       (push (make-box :id id :shape (make-shape-from-frame pos top))
-	    (box-children *allbox*)))))
+	    (box-children allbox)))))
+
+(defun parse-json ()
+  (let ((allbox (empty-allbox)))
+    (parse-json-into allbox)
+    allbox))
 
 (defun run-later-solver ()
-  )
+  (execute-program nil))
 
 (defun later-problem ()
   (> *problem* 25))
