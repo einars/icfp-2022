@@ -4,6 +4,7 @@ use blocks::*;
 use egui::{Color32, Painter, Rgba, TextEdit};
 use egui_extras::RetainedImage;
 use parser::{BlockId, CutDirection, ProgCmd};
+use rstats::VecVec;
 
 pub struct TemplateApp<'a> {
     action: Action,
@@ -360,7 +361,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 if *action == Action::AvgColor {
                     if let Some(id) = pos_to_block(&canvas.rect, pos, current) {
                         if let Ok(block) = current.get_block(&id) {
-                            let color = calc_avgcolor(&block, target);
+                            let color = calc_gmedian(&block, target);
                             dispatch_cmd!(id, vec![ProgCmd::Color(id, color)], {});
                         }
                     }
@@ -373,11 +374,11 @@ impl<'a> eframe::App for TemplateApp<'a> {
                                 let mut next_temp = current.clone();
                                 if next_temp.apply_cmd(&ProgCmd::LineCut(id, CutDirection::Y, cpos.1)).is_ok() {
                                     let cols = [
-                                        calc_avgcolor(
+                                        calc_gmedian(
                                             next_temp.get_block(&block.sub_id(0)).unwrap(),
                                             target,
                                         ),
-                                        calc_avgcolor(
+                                        calc_gmedian(
                                             next_temp.get_block(&block.sub_id(1)).unwrap(),
                                             target,
                                         ),
@@ -410,11 +411,11 @@ impl<'a> eframe::App for TemplateApp<'a> {
                                 let mut next_temp = current.clone();
                                 if next_temp.apply_cmd(&ProgCmd::LineCut(id, CutDirection::X, cpos.0)).is_ok() {
                                     let cols = [
-                                        calc_avgcolor(
+                                        calc_gmedian(
                                             next_temp.get_block(&block.sub_id(0)).unwrap(),
                                             target,
                                         ),
-                                        calc_avgcolor(
+                                        calc_gmedian(
                                             next_temp.get_block(&block.sub_id(1)).unwrap(),
                                             target,
                                         ),
@@ -447,19 +448,19 @@ impl<'a> eframe::App for TemplateApp<'a> {
                                 let mut next_temp = current.clone();
                                 if next_temp.apply_cmd(&ProgCmd::PointCut(id, cpos)).is_ok() {
                                     let cols = [
-                                        calc_avgcolor(
+                                        calc_gmedian(
                                             next_temp.get_block(&block.sub_id(0)).unwrap(),
                                             target,
                                         ),
-                                        calc_avgcolor(
+                                        calc_gmedian(
                                             next_temp.get_block(&block.sub_id(1)).unwrap(),
                                             target,
                                         ),
-                                        calc_avgcolor(
+                                        calc_gmedian(
                                             next_temp.get_block(&block.sub_id(2)).unwrap(),
                                             target,
                                         ),
-                                        calc_avgcolor(
+                                        calc_gmedian(
                                             next_temp.get_block(&block.sub_id(3)).unwrap(),
                                             target,
                                         ),
@@ -617,26 +618,20 @@ fn pos_to_block(cr: &egui::Rect, pos: egui::Pos2, painting: &Painting) -> Option
     ))
 }
 
-fn calc_avgcolor(b: &Block, i: &image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) -> parser::Color {
-    let mut sr: usize = 0;
-    let mut sg: usize = 0;
-    let mut sb: usize = 0;
-    let mut sa: usize = 0;
+fn calc_gmedian(b: &Block, i: &image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) -> parser::Color {
+    let mut vecvec = Vec::<Vec<u8>>::with_capacity((b.size.0 * b.size.1) as usize);    
     for x in 0..b.size.0 {
         for y in 0..b.size.1 {
             let pixel = i.get_pixel(b.pos.0 + x, 399 - (b.pos.1 + y));
-            sr += pixel.0[0] as usize;
-            sg += pixel.0[1] as usize;
-            sb += pixel.0[2] as usize;
-            sa += pixel.0[3] as usize;
+            let mut vpixel = Vec::<u8>::with_capacity(4);
+            vpixel.push(pixel.0[0]);
+            vpixel.push(pixel.0[1]);
+            vpixel.push(pixel.0[2]);
+            vpixel.push(pixel.0[3]);
+            vecvec.push(vpixel);
         }
     }
 
-    let area = (b.size.0 * b.size.1) as usize;
-    parser::Color([
-        (sr / area) as u8,
-        (sg / area) as u8,
-        (sb / area) as u8,
-        (sa / area) as u8,
-    ])
+    let res = vecvec.gmedian(1.0);
+    parser::Color([res[0] as u8, res[1] as u8, res[2] as u8, res[3] as u8])
 }
