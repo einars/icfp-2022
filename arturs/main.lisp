@@ -643,6 +643,9 @@
 		   (setf ticks 0))))
     (loop (execute-program brave update)
 	  (setf brave (update-program good ticks))
+	  (when (> ticks 1000)
+	    (format t "GIVE UP SWAPER~%")
+	    (return-from run-swaper-solver good))
 	  (incf ticks))))
 
 (defun box-merge-cells (size)
@@ -658,6 +661,7 @@
 
 (defun run-later-solver (x y)
   (let ((size (box-size (box-by-pos (make-pos :x 0 :y 0)))))
+    ;(run-swaper-solver)
     (box-merge-cells size)
     (box-merge-slices size)
     (run-mosaic-program-solver x y)))
