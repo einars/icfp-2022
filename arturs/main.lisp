@@ -663,12 +663,14 @@
     (box-merge (box-by-pos (make-pos :x 0 :y y))
 	       (box-by-pos (make-pos :x 0 :y 0)))))
 
-(defun run-later-solver (x y)
+(defun run-later-solver (input-file x y)
   (let ((size (box-size (box-by-pos (make-pos :x 0 :y 0)))))
     ;(run-swaper-solver)
     (box-merge-cells size)
     (box-merge-slices size)
-    (run-mosaic-program-solver x y)))
+    (if (not (probe-file input-file))
+	(run-mosaic-program-solver x y)
+	(load input-file))))
 
 (defun later-problem ()
   (> *problem* 25))
@@ -710,7 +712,7 @@
 
 (defun choose-solver (input-file x y)
   (cond ((later-problem)
-	 (run-later-solver x y))
+	 (run-later-solver input-file x y))
 	((probe-file input-file)
 	 (load input-file))
 	(t (run-mosaic-program-solver x y))))
