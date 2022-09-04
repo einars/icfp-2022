@@ -550,6 +550,10 @@
 
 (declaim (ftype function read-canvas read-allbox))
 
+(defun get-time ()
+  (multiple-value-bind (s m h) (get-decoded-time)
+    (format nil "~A:~A:~A" h m s)))
+
 (defun execute-program (program &optional on-best)
   (let* ((*boxnum* 0)
 	 (*canvas* (read-canvas))
@@ -559,7 +563,7 @@
       (execute-cmd i))
     (let ((score (score)))
       (when (< score *best*)
-	(format t "BEST(~A):~A~%" *problem* score)
+	(format t "BEST(~A):~A @ ~A~%" *problem* score (get-time))
 	(when on-best (funcall on-best))
 	(setf *best* score)
 	(save-program)
