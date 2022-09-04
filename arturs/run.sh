@@ -7,7 +7,7 @@ if [[ $1 -le 0 || $1 -gt 40 ]]; then
 fi
 if [[ -z $SIZE && $1 -le 25 ]]; then
     SIZE=$(head -n $1 $SCORES | tail -n 1 | sed "s/.*(//" | sed "s/)//")
-else
+elif [[ -z $SIZE ]]; then
     SIZE=8
 fi
 sbcl --noinform \
