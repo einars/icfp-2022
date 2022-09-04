@@ -110,7 +110,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 ui.radio_value(action, Action::CutHoriz, "Cut Horizontally (h)");
                 ui.radio_value(action, Action::CutVert, "Cut Vertically (v)");
                 ui.radio_value(action, Action::CutPoint, "Cut Point (p)");
-                ui.radio_value(action, Action::Color, "Color (c)");
+                ui.radio_value(action, Action::Color, "Color");
                 ui.radio_value(action, Action::AvgColor, "AvgColor (a)");
                 ui.radio_value(action, Action::OCutHoriz, "O-cut Horiz. (C-h)");
                 ui.radio_value(action, Action::OCutVert, "O-cut Vert. (C-v)");
@@ -126,9 +126,6 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 }
                 if ctx.input().key_pressed(egui::Key::P) {
                     *action = Action::CutPoint
-                }
-                if ctx.input().key_pressed(egui::Key::C) {
-                    *action = Action::Color
                 }
                 if ctx.input().key_pressed(egui::Key::A) {
                     *action = Action::AvgColor
