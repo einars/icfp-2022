@@ -15,6 +15,7 @@
 (defvar *image-h* 0)
 (defvar *surface* 0)
 (defvar *problem* 0)
+(defvar *parent* nil)
 
 (defvar *pnm* "canvas.pnm")
 (defvar *txt* "result.txt")
@@ -663,6 +664,10 @@
     (box-merge (box-by-pos (make-pos :x 0 :y y))
 	       (box-by-pos (make-pos :x 0 :y 0)))))
 
+(defun load-program (input-file)
+  (let ((*parent* (background-box)))
+    (load input-file)))
+
 (defun run-later-solver (input-file x y)
   (let ((size (box-size (box-by-pos (make-pos :x 0 :y 0)))))
     ;(run-swaper-solver)
@@ -670,7 +675,7 @@
     (box-merge-slices size)
     (if (not (probe-file input-file))
 	(run-mosaic-program-solver x y)
-	(load input-file))))
+	(load-program input-file))))
 
 (defun later-problem ()
   (> *problem* 25))
@@ -699,7 +704,7 @@
   (color box (coerce (second args) 'vector)))
 
 (defun find-last-box (id)
-  (incf (first id) (first (box-id (background-box))))
+  (incf (first id) (first (box-id *parent*)))
   (find-box id))
 
 (defun process-cmd (fn box args)
@@ -718,7 +723,7 @@
   (cond ((later-problem)
 	 (run-later-solver input-file x y))
 	((probe-file input-file)
-	 (load input-file))
+	 (load-program input-file))
 	(t (run-mosaic-program-solver x y))))
 
 (defun painter (i &optional (x 8) (y 8))
