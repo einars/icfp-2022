@@ -13,6 +13,8 @@ if api_key == None:
     raise Exception("api_key env PLEASE!")
 
 
+def prettier_time(t):
+    return '{}.sep {}'.format(t[9], t[11:16])
 
 authorization = 'Bearer ' + api_key
 
@@ -33,17 +35,18 @@ for e in j['submissions']:
     if problem_id > max:
         max = problem_id
 
-    if problem_id not in besties:
-        besties[problem_id] = score
-    elif score < besties[problem_id]:
-        besties[problem_id] = score
+    if problem_id not in besties or score < besties[problem_id]['score']:
+        besties[problem_id] = {
+            'score': score,
+            'submitted_at': e['submitted_at']
+        }
 
 problem_ids = list(besties.keys())
 problem_ids.sort()
 total = 0
 for problem_id in problem_ids:
-    print("{}:\t{}".format(problem_id, besties[problem_id]))
-    total += besties[problem_id]
+    print("{}:\t{}\t{}".format(problem_id, prettier_time(besties[problem_id]['submitted_at']), besties[problem_id]['score']))
+    total += besties[problem_id]['score']
 
 print("Total:\t{}".format(total))
 
