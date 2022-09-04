@@ -5,4 +5,5 @@ members = [
     "kleksis",
     "mosaic",
     "parser",
+    "rastaman",
     ]
