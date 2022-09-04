@@ -467,16 +467,20 @@
 	(when (eq (first subcopy) :color)
 	  (copy-color subcopy))))))
 
+(defun find-from-other (box)
+  (find-box (box-id box)))
+
 (defun execute-cmd (cmd)
-  (let ((box (find-box (box-id (second cmd)))))
+  (let ((box (find-from-other (second cmd))))
     (case (first cmd)
       (:color (color box (third cmd)))
       (:lcut (lcut box (third cmd) (fourth cmd)))
+      (:swap (swap box (find-from-other (third cmd))))
       (otherwise (error "implement execute cmd")))))
 
 (declaim (ftype function read-canvas read-allbox))
 
-(defun execute-program (program)
+(defun execute-program (program &optional on-best)
   (let ((*program* (make-empty-program))
 	(*canvas* (read-canvas))
 	(*allbox* (read-allbox))
@@ -486,6 +490,7 @@
     (let ((score (score)))
       (when (< score *best*)
 	(format t "BEST(~A):~A~%" *problem* score)
+	(when on-best (funcall on-best))
 	(setf *best* score)
 	(save-program)
 	(save-canvas))
@@ -549,8 +554,19 @@
     (parse-json-into allbox)
     allbox))
 
+(defun random-swap ()
+  (let ((candidates (box-children *allbox*)))
+    `(:swap ,(random-elt candidates) ,(random-elt candidates))))
+
+(defun update-program (program)
+  (cons (random-swap) program))
+
 (defun run-later-solver ()
-  (execute-program nil))
+  (let* ((*best* (score))
+	 (good (make-empty-program))
+	 (brave (update-program good)))
+    (loop (execute-program brave (lambda () (setf good brave)))
+	  (setf brave (update-program good)))))
 
 (defun later-problem ()
   (> *problem* 25))
@@ -570,7 +586,7 @@
       (parse-json)
       (empty-allbox)))
 
-(defun painter (i x y)
+(defun painter (i &optional (x 8) (y 8))
   (let* ((*boxnum* 0)
 	 (*problem* i)
 	 (file (format nil "../problems/~A.png" i))
