@@ -449,8 +449,11 @@
 (defun calc-color (box x y)
   (average-color (make-shape :pos (box-pos box) :size (mosaic-chunk x y))))
 
+(defun background-box ()
+  (first (box-children *allbox*)))
+
 (defun background-color ()
-  (let ((parent (first (box-children *allbox*))))
+  (let ((parent (background-box)))
     (color parent (calc-color parent *image-w* *image-h*))))
 
 (defun run-mosaic-program-solver (x y)
@@ -469,7 +472,7 @@
 	  (slice-vertical-problem (1+ i) (+ h stepy) (second children))))
       (slice-horizontal-problem 0 stepx box))
     ; now run the slicer
-    (slice-vertical-problem 0 stepy (find-box '(0)))))
+    (slice-vertical-problem 0 stepy (background-box))))
 
 (defun random-elt (l)
   (elt l (random (length l))))
@@ -630,7 +633,7 @@
 	(setf box1 box2)))
     program))
 
-(defun run-later-solver ()
+(defun run-swaper-solver ()
   (let* ((ticks 0)
 	 (*best* (score))
 	 (good (make-empty-program))
@@ -641,6 +644,23 @@
     (loop (execute-program brave update)
 	  (setf brave (update-program good ticks))
 	  (incf ticks))))
+
+(defun box-merge-cells (size)
+  (loop for y from 0 to (1- *image-h*) by (pos-y size) do
+    (loop for x from (pos-x size) to (1- *image-w*) by (pos-x size) do
+      (box-merge (box-by-pos (make-pos :x x :y y))
+		 (box-by-pos (make-pos :x 0 :y y))))))
+
+(defun box-merge-slices (size)
+  (loop for y from (pos-y size) to (1- *image-h*) by (pos-y size) do
+    (box-merge (box-by-pos (make-pos :x 0 :y y))
+	       (box-by-pos (make-pos :x 0 :y 0)))))
+
+(defun run-later-solver (x y)
+  (let ((size (box-size (box-by-pos (make-pos :x 0 :y 0)))))
+    (box-merge-cells size)
+    (box-merge-slices size)
+    (run-mosaic-program-solver x y)))
 
 (defun later-problem ()
   (> *problem* 25))
@@ -682,7 +702,7 @@
 
 (defun choose-solver (input-file x y)
   (cond ((later-problem)
-	 (run-later-solver))
+	 (run-later-solver x y))
 	((probe-file input-file)
 	 (load input-file))
 	(t (run-mosaic-program-solver x y))))
@@ -705,7 +725,7 @@
     (format t "N(~A,~A): SCORE:~A~%" x y (score))
     (save-program)
     (save-canvas)
-    (when (and *program* (not (later-problem)))
+    (when *program*
       (optimize-program *program*))
     (score)))
 
