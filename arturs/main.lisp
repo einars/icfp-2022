@@ -33,6 +33,9 @@
   (declare (ignore d))
   (format s "<P:~A,~A>" (pos-x b) (pos-y b)))
 
+(defun pos-new (x y)
+  (make-pos :x x :y y))
+
 (defun pos-add-x (p x)
   (make-pos :x (+ (pos-x p) x) :y (pos-y p)))
 
@@ -391,8 +394,9 @@
   (register-merge-cmd box1 box2)
   (remove-from-parent box1)
   (remove-from-parent box2)
-  (push (merge-box box1 box2)
-	(box-children *allbox*)))
+  (let ((new-box (merge-box box1 box2)))
+    (push new-box (box-children *allbox*))
+    new-box))
 
 (defun format-id (box)
   (format nil "~{~A~^.~}" (box-id box)))
@@ -460,7 +464,7 @@
   (let ((parent (background-box)))
     (color parent (calc-color parent *image-w* *image-h*))))
 
-(defun run-mosaic-program-solver (x y)
+(defun horizontal-shreader (x y)
   (let ((stepx (floor (/ *image-w* x)))
 	(stepy (floor (/ *image-h* y))))
     (background-color)
@@ -477,6 +481,32 @@
       (slice-horizontal-problem 0 stepx box))
     ; now run the slicer
     (slice-vertical-problem 0 stepy (background-box))))
+
+(defun box-by-x-y (x y)
+  (box-by-pos (pos-new x y)))
+
+(defun vertical-weaver (p-w p-h)
+  (let ((stepx (floor (/ *image-w* p-w)))
+	(stepy (floor (/ *image-h* p-h))))
+    (loop for y from 0 to (- *image-h* stepy) by stepy do
+      (loop for x from 0 to (- *image-w* stepx) by stepx do
+	(let (children1 children2 product)
+	  (when (> y 0)
+	    (setf children1 (lcut (box-by-x-y x y) 'y y)))
+	  (when (> x 0)
+	    (setf children2 (lcut (box-by-x-y x y) 'x x)))
+	  (let ((box (box-by-x-y x y)))
+	    (color box (calc-color box p-w p-h)))
+	  (when children2
+	    (setf product (apply #'box-merge children2)))
+	  (when children1
+	    (if product
+		(box-merge product (first children1))
+		(apply #'box-merge children1))))))))
+
+(defun run-mosaic-program-solver (x y)
+;  (vertical-weaver x y))
+  (horizontal-shreader x y))
 
 (defun random-elt (l)
   (elt l (random (length l))))
