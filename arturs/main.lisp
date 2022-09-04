@@ -667,10 +667,15 @@
 (defun process-color (box args)
   (color box (coerce (second args) 'vector)))
 
+(defun process-cmd (fn box args)
+  (funcall fn box (find-box (second args))))
+
 (defun process (&rest args)
   (let ((box (find-box (second args))))
     (case (first args)
       (cut (process-cut box (rest args)))
+      (swap (process-cmd #'swap box (rest args)))
+      (merge (process-cmd #'box-merge box (rest args)))
       (color (process-color box (rest args)))
       (otherwise nil))))
 
