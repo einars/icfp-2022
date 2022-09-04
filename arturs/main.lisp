@@ -257,19 +257,26 @@
       ((eq axis 'y) (and (< (pos-y p) num (1- (+ (pos-y p) (shape-h s))))))
       (t nil))))
 
-(define-condition lcut-error (error) ())
+(defun pcut-sanity-check (box x y)
+  (and (lcut-sanity-check box 'x x)
+       (lcut-sanity-check box 'y y)))
+
+(define-condition cmd-error (error) ())
 
 (defun lcut (box axis num)
   (when (consp (box-children box))
     (error "box already have children"))
   (when (not (lcut-sanity-check box axis num))
-    (error 'lcut-error))
+    (error 'cmd-error))
   (setf (box-children box) (l-split box axis num))
   (push `(:lcut ,box ,axis ,num) *program*)
   (box-children box))
 
 (defun pcut (box x y)
-  (when (consp (box-children box)) (error "box already have children"))
+  (when (consp (box-children box))
+    (error "box already have children"))
+  (when (not (pcut-sanity-check box x y))
+    (error 'cmd-error))
   (setf (box-children box) (p-split box x y))
   (push `(:pcut ,box ,x ,y) *program*)
   (box-children box))
@@ -315,7 +322,7 @@
 
 (defun swap (box1 box2)
   (when (not (pos-eq (box-size box1) (box-size box2)))
-    (error "box sizes for swap is not equal"))
+    (error 'cmd-error))
   (push `(:swap ,box1 ,box2) *program*)
   (let ((parent1 (box-parent box1))
 	(parent2 (box-parent box2))
@@ -529,7 +536,7 @@
 
 (defun execute-program-safe (x)
   (handler-case (execute-program x)
-    (lcut-error (var)
+    (cmd-error (var)
       (declare (ignore var))
       (list most-positive-fixnum nil))))
 
