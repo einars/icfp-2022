@@ -698,11 +698,15 @@
 (defun process-color (box args)
   (color box (coerce (second args) 'vector)))
 
+(defun find-last-box (id)
+  (incf (first id) (first (box-id (background-box))))
+  (find-box id))
+
 (defun process-cmd (fn box args)
-  (funcall fn box (find-box (second args))))
+  (funcall fn box (find-last-box (second args))))
 
 (defun process (&rest args)
-  (let ((box (find-box (second args))))
+  (let ((box (find-last-box (second args))))
     (case (first args)
       (cut (process-cut box (rest args)))
       (swap (process-cmd #'swap box (rest args)))
