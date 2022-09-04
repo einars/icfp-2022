@@ -2,8 +2,19 @@
 
 import requests
 import json
+import os
 
-authorization = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkbXVuZHMuY2Vyc0BnbWFpbC5jb20iLCJleHAiOjE2NjIyODczODcsIm9yaWdfaWF0IjoxNjYyMjAwOTg3fQ.3l66kH5WtEcVAuiGeQDVfxSnLFhMLstV419W4YebohA'
+api_key = os.getenv('api_key')
+if api_key == None:
+    api_key = os.getenv('API_KEY')
+
+if api_key == None:
+    print()
+    raise Exception("api_key env PLEASE!")
+
+
+
+authorization = 'Bearer ' + api_key
 
 d = requests.get('https://robovinci.xyz/api/submissions', headers={
                      'Authorization': authorization

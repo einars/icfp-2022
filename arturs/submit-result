@@ -2,12 +2,12 @@
 
 set -e
 
-api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkbXVuZHMuY2Vyc0BnbWFpbC5jb20iLCJleHAiOjE2NjIyODczODcsIm9yaWdfaWF0IjoxNjYyMjAwOTg3fQ.3l66kH5WtEcVAuiGeQDVfxSnLFhMLstV419W4YebohA
+source ../.env # api_key
 
 f=$1
 
 
-cp result/$f.txt genetic-run/result/
+#cp result/$f.txt genetic-run/result/
 
 curl "https://robovinci.xyz/api/submissions/$f/create" \
     -H "Authorization: Bearer $api_key"\

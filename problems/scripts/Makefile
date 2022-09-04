@@ -1,2 +1,4 @@
+include ../../.env
+
 all:
-	./get-best-results.py | tee ../best-results.txt
+	api_key=${api_key} ./get-best-results.py | tee ../best-results.txt
