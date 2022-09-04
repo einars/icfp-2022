@@ -635,7 +635,7 @@
 	 (load input-file))
 	(t (run-mosaic-program-solver x y))))
 
-(defun painter (i &optional (x 8) (y 8) (input-file "input.lisp"))
+(defun painter (i &optional (x 8) (y 8))
   (let* ((*boxnum* 0)
 	 (*problem* i)
 	 (file (format nil "../problems/~A.png" i))
@@ -649,7 +649,7 @@
 	 (*target* (convert-image png))
 	 (*canvas* (read-canvas))
 	 (*allbox* (read-allbox)))
-    (choose-solver input-file x y)
+    (choose-solver (format nil "input/~A.lisp" i) x y)
     (format t "N(~A,~A): SCORE:~A~%" x y (score))
     (save-program)
     (save-canvas)
