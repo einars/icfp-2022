@@ -107,37 +107,28 @@ impl<'a> eframe::App for TemplateApp<'a> {
             .show(ctx, |ui| {
                 ui.heading("Action");
 
-                ui.radio_value(action, Action::CutHoriz, "Cut Horizontally (h)");
-                ui.radio_value(action, Action::CutVert, "Cut Vertically (v)");
+                ui.radio_value(action, Action::CutHoriz, "Cut Horizontally");
+                ui.radio_value(action, Action::CutVert, "Cut Vertically");
                 ui.radio_value(action, Action::CutPoint, "Cut Point (p)");
                 ui.radio_value(action, Action::Color, "Color");
                 ui.radio_value(action, Action::AvgColor, "AvgColor (a)");
-                ui.radio_value(action, Action::OCutHoriz, "O-cut Horiz. (C-h)");
-                ui.radio_value(action, Action::OCutVert, "O-cut Vert. (C-v)");
-                ui.radio_value(action, Action::OCutPoint, "O-cut Point (C-p)");
+                ui.radio_value(action, Action::OCutHoriz, "O-cut Horiz. (h)");
+                ui.radio_value(action, Action::OCutVert, "O-cut Vert. (v)");
+                ui.radio_value(action, Action::OCutPoint, "O-cut Point");
                 ui.radio_value(action, Action::Swap, "Swap (s)");
                 ui.radio_value(action, Action::Merge, "Merge (m)");
 
-                if ctx.input().key_pressed(egui::Key::H) {
-                    *action = Action::CutHoriz
-                }
-                if ctx.input().key_pressed(egui::Key::V) {
-                    *action = Action::CutVert
-                }
                 if ctx.input().key_pressed(egui::Key::P) {
                     *action = Action::CutPoint
                 }
                 if ctx.input().key_pressed(egui::Key::A) {
                     *action = Action::AvgColor
                 }
-                if ctx.input().key_pressed(egui::Key::H) && ctx.input().modifiers.ctrl {
+                if ctx.input().key_pressed(egui::Key::H) {
                     *action = Action::OCutHoriz
                 }
-                if ctx.input().key_pressed(egui::Key::V) && ctx.input().modifiers.ctrl {
+                if ctx.input().key_pressed(egui::Key::V) {
                     *action = Action::OCutVert
-                }
-                if ctx.input().key_pressed(egui::Key::P) && ctx.input().modifiers.ctrl {
-                    *action = Action::OCutPoint
                 }
                 if ctx.input().key_pressed(egui::Key::S) {
                     *action = Action::Swap
