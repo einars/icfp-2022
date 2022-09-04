@@ -181,14 +181,17 @@
 (defun box-cost (box)
   (/ *surface* (surface (shape-size (box-shape box)))))
 
+(defun color-score (cmd)
+  (if (fourth cmd) 0 5))
+
 (defun command-cost (cmd)
   (round (* (box-cost (second cmd))
 	    (case (first cmd)
 	      (:swap 3)
 	      (:lcut 7)
 	      (:pcut 10)
-	      (:color 5)
 	      (:merge 1)
+	      (:color (color-score cmd))
 	      (otherwise 0)))))
 
 (defun cost ()
@@ -281,12 +284,13 @@
 	(ty (- *image-w* (+ (shape-y shape) y 1))))
     (aref img tx ty)))
 
-(defun color (box color)
+(defun color (box color &optional disabled)
   (let* ((shape (box-shape box)))
-    (push `(:color ,box ,color) *program*)
-    (dotimes (y (shape-h shape))
-      (dotimes (x (shape-w shape))
-	(set-pixel shape x y color)))))
+    (push `(:color ,box ,color ,disabled) *program*)
+    (when (not disabled)
+      (dotimes (y (shape-h shape))
+	(dotimes (x (shape-w shape))
+	  (set-pixel shape x y color))))))
 
 (defun displace-box (box diff)
   (let ((shape (box-shape box)))
@@ -373,9 +377,10 @@
 	  (format-id (third cmd))))
 
 (defun format-color-command (out cmd)
-  (format out "color [~A] [~A]~%"
-	  (format-id (second cmd))
-	  (format-color (third cmd))))
+  (when (not (fourth cmd))
+    (format out "color [~A] [~A]~%"
+	    (format-id (second cmd))
+	    (format-color (third cmd)))))
 
 (defun format-merge-command (out cmd)
   (format out "merge [~A] [~A]~%"
@@ -409,9 +414,14 @@
 (defun calc-color (box x y)
   (average-color (make-shape :pos (box-pos box) :size (mosaic-chunk x y))))
 
+(defun background-color ()
+  (let ((parent (first (box-children *allbox*))))
+    (color parent (calc-color parent *image-w* *image-h*))))
+
 (defun run-mosaic-program-solver (x y)
   (let ((stepx (floor (/ *image-w* x)))
 	(stepy (floor (/ *image-h* y))))
+    (background-color)
     (defun slice-horizontal-problem (i w box)
       (color box (calc-color box x y))
       (when (<= w (- *image-w* stepx))
@@ -435,6 +445,9 @@
 (defun mutate-number (victim)
   (setf (first victim) (random-jerk (first victim))))
 
+(defun mutate-bool (victim)
+  (setf (first victim) (not (first victim))))
+
 (defun clamp (num)
   (max 0 (min 255 num)))
 
@@ -443,17 +456,25 @@
     (setf (elt victim index) (clamp (random-jerk (elt victim index))))
     victim))
 
+(defun pick-color-arg (c)
+  (let ((disabled (fourth c)))
+    (if (or disabled (= 0 (random 2)))
+	(rest (rest (rest c)))
+	(third c))))
+
 (defun random-tweak-program (program)
   (let ((places nil))
     (dolist (i program)
       (case (first i)
-	(:color (push (third i) places))
+	(:color (push (pick-color-arg i) places))
 	(:lcut (push (rest (rest (rest i))) places))
 	(otherwise nil)))
     (let ((victim (random-elt places)))
-      (if (vectorp victim)
-	  (mutate-color victim)
-	  (mutate-number victim)))
+      (cond ((vectorp victim)
+	     (mutate-color victim))
+	    ((numberp (first victim))
+	     (mutate-number victim))
+	    (t (mutate-bool victim))))
     program))
 
 (defun copy-color (color-cmd)
@@ -473,7 +494,7 @@
 (defun execute-cmd (cmd)
   (let ((box (find-from-other (second cmd))))
     (case (first cmd)
-      (:color (color box (third cmd)))
+      (:color (color box (third cmd) (fourth cmd)))
       (:lcut (lcut box (third cmd) (fourth cmd)))
       (:swap (swap box (find-from-other (third cmd))))
       (otherwise (error "implement execute cmd")))))
