@@ -556,7 +556,7 @@
 
 (defun get-time ()
   (multiple-value-bind (s m h) (get-decoded-time)
-    (format nil "~A:~A:~A" h m s)))
+    (format nil "~2,'0d:~2,'0d:~2,'0d" h m s)))
 
 (defun execute-program (program &optional on-best)
   (let* ((*boxnum* 0)
