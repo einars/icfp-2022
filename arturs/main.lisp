@@ -150,7 +150,7 @@
 	      (get-color data x y))))))
 
 (defun component-distance (c1 c2 i)
-  (expt (- (aref c1 i) (aref c2 i)) 2))
+  (expt (- (svref c1 i) (svref c2 i)) 2))
 
 (defun similarity (&optional (p1 *target*) (p2 *canvas*))
   (let ((score 0.0d0))
@@ -176,7 +176,7 @@
 
 (defun save-color (out x y)
   (dotimes (i (1- +components+))
-    (format out "~A " (elt (aref *canvas* x y) i))))
+    (format out "~A " (svref (aref *canvas* x y) i))))
 
 (defun save-canvas ()
   (with-open-file (out *pnm* :direction :output :if-exists :supersede)
