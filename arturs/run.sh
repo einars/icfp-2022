@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCORES=mosaic-run/scores.txt
-if [[ $1 -le 0 || $1 -gt 35 ]]; then
+if [[ $1 -le 0 || $1 -gt 40 ]]; then
     echo ARG Please!
     exit
 fi
