@@ -1,4 +1,5 @@
 (ql:quickload "png-read")
+(ql:quickload "cl-json")
 
 (defconstant +components+ 4)
 (defconstant +half-pool+ 2)
@@ -516,6 +517,33 @@
 	    (let ((done (execute-contestant (elt pool i))))
 	      (setf (elt pool i) done))))))
 
+(defun read-json (n)
+  (with-open-file (problem (format nil "../problems/~A.initial.json" n))
+    (json:decode-json problem)))
+
+(defun make-shape-from-frame (pos top)
+  (make-shape :pos pos :size (pos-sub top pos)))
+
+(defun list-to-pos (l)
+  (make-pos :x (first l) :y (second l)))
+
+(defun json-place-to-pos (p key)
+  (list-to-pos (rest (assoc key p))))
+
+(defun parse-json (n)
+  (dolist (p (rest (third (read-json n))))
+    (let ((id (list (rest (assoc :block-id p))))
+	  (pos (json-place-to-pos p :bottom-left))
+	  (top (json-place-to-pos p :top-right)))
+      (push (make-box :id id :shape (make-shape-from-frame pos top))
+	    (box-children *allbox*)))))
+
+(defun run-later-solver (n)
+  (parse-json n))
+
+(defun later-problem (n)
+  (> n 25))
+
 (defun painter (i x y)
   (let* ((file (format nil "../problems/~A.png" i))
 	 (png (png-read:read-png-file file))
@@ -530,11 +558,14 @@
 	 (*allbox* (empty-allbox))
 	 (*problem* i)
 	 (*boxnum* 0))
-    (run-mosaic-program-solver x y)
+    (if (later-problem i)
+	(run-later-solver i)
+	(run-mosaic-program-solver x y))
     (format t "N(~A,~A): SCORE:~A~%" x y (score))
     (save-program)
     (save-canvas)
-    (optimize-program *program*)
+    (when (not (later-problem i))
+      (optimize-program *program*))
     (score)))
 
 (defun top-level (i x y)
