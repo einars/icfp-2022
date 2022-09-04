@@ -622,8 +622,8 @@ fn calc_avgcolor(b: &Block, i: &image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) ->
     let mut sg: usize = 0;
     let mut sb: usize = 0;
     let mut sa: usize = 0;
-    for x in 0..b.size.0 - 1 {
-        for y in 0..b.size.1 - 1 {
+    for x in 0..b.size.0 {
+        for y in 0..b.size.1 {
             let pixel = i.get_pixel(b.pos.0 + x, 399 - (b.pos.1 + y));
             sr += pixel.0[0] as usize;
             sg += pixel.0[1] as usize;
