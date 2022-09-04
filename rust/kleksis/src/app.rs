@@ -367,6 +367,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
                         if let Some(cpos) = curr_pos {
                             if let Ok(block) = current.get_block(&id) {
                                 let mut next_temp = current.clone();
+                                let sb_idx: usize = if cpos.1 < block.size.1 - cpos.1 { 0 } else { 1 };
                                 if next_temp.apply_cmd(&ProgCmd::LineCut(id, CutDirection::Y, cpos.1)).is_ok() {
                                     let cols = [
                                         calc_gmedian(
@@ -381,9 +382,9 @@ impl<'a> eframe::App for TemplateApp<'a> {
                                     dispatch_cmd!(
                                         id,
                                         vec![
+                                            ProgCmd::Color(id.clone(), cols[sb_idx].clone()),
                                             ProgCmd::LineCut(id, CutDirection::Y, cpos.1),
-                                            ProgCmd::Color(block.sub_id(0), cols[0].clone()),
-                                            ProgCmd::Color(block.sub_id(1), cols[1].clone()),
+                                            ProgCmd::Color(block.sub_id(1 - sb_idx as u32), cols[1 - sb_idx].clone()),
                                         ],
                                         {
                                             paint.hline(
@@ -415,12 +416,13 @@ impl<'a> eframe::App for TemplateApp<'a> {
                                             target,
                                         ),
                                     ];
+                                    let sb_idx: usize = if cpos.0 < block.size.0 - cpos.0 { 0 } else { 1 };
                                     dispatch_cmd!(
                                         id,
                                         vec![
+                                            ProgCmd::Color(id.clone(), cols[sb_idx].clone()),
                                             ProgCmd::LineCut(id, CutDirection::X, cpos.0),
-                                            ProgCmd::Color(block.sub_id(0), cols[0].clone()),
-                                            ProgCmd::Color(block.sub_id(1), cols[1].clone()),
+                                            ProgCmd::Color(block.sub_id(1 - sb_idx as u32), cols[1 - sb_idx].clone()),
                                         ],
                                         {
                                             paint.vline(
