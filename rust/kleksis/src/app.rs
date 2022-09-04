@@ -195,6 +195,18 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 ui.heading("Program");
                 egui::ScrollArea::vertical().show(ui, |ui| {
                     ui.horizontal(|ui| {
+                        if ui
+                            .add(egui::Button::new("Save").fill(Color32::DARK_GREEN))
+                            .clicked()
+                        {
+                            let mut file_name = std::env::args().nth(1).unwrap();
+                            file_name.push_str(".txt");
+                            match std::fs::write(std::path::Path::new(&file_name), &code) {
+                                Ok(_) => (),
+                                Err(err) => *code_error = format!("Error saving file: {err:?}"),
+                            }
+                        }
+
                         if ui.add(egui::Button::new("Apply")).clicked() {
                             *code_error = "".to_string();
                             match parser::source_to_tree(code) {
@@ -607,7 +619,7 @@ fn pos_to_block(cr: &egui::Rect, pos: egui::Pos2, painting: &Painting) -> Option
 }
 
 fn calc_gmedian(b: &Block, i: &image::ImageBuffer<image::Rgba<u8>, Vec<u8>>) -> parser::Color {
-    let mut vecvec = Vec::<Vec<u8>>::with_capacity((b.size.0 * b.size.1) as usize);    
+    let mut vecvec = Vec::<Vec<u8>>::with_capacity((b.size.0 * b.size.1) as usize);
     for x in 0..b.size.0 {
         for y in 0..b.size.1 {
             let pixel = i.get_pixel(b.pos.0 + x, 399 - (b.pos.1 + y));
