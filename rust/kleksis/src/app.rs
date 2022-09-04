@@ -182,9 +182,10 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     let cost: u32 = next_cmd
                         .iter()
                         .map(|cmd| {
-                            let cost = compadre::calc_cmd_score(cmd, &next_temp).unwrap();
-                            let _ = next_temp.apply_cmd(cmd);
-                            cost
+                            compadre::calc_cmd_score(cmd, &next_temp).map_or(0, |cost| {
+                                next_temp.apply_cmd(cmd).unwrap();
+                                cost
+                            })
                         })
                         .sum();
                     ui.label("Cost: ");
