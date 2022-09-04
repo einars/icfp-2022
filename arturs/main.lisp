@@ -344,7 +344,8 @@
 
 (defun remove-from-parent (box)
   (let ((parent (box-parent box)))
-    (setf (box-children parent) (delete box (box-children parent)))))
+    (when parent
+      (setf (box-children parent) (delete box (box-children parent))))))
 
 (defun merge-shape (shape1 shape2)
   (let* ((pos (pos-min (shape-pos shape1) (shape-pos shape2)))
