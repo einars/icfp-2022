@@ -684,7 +684,7 @@
   (> *problem* 35))
 
 (defun later-problem ()
-  (and (not (final-problem))
+  (and (< *problem* 36)
        (> *problem* 25)))
 
 (defun load-canvas ()
@@ -730,7 +730,7 @@
 (defun choose-solver (input-file x y)
   (when (final-problem)
     (setf *lcut-price* 2)
-    (setf *lcut-price* 3))
+    (setf *pcut-price* 3))
   (cond ((later-problem)
 	 (run-later-solver input-file x y))
 	((probe-file input-file)
