@@ -1,6 +1,7 @@
 #!/bin/bash
 
-sed "s/^/(process '/" \
+grep -v "^#" \
+| sed "s/^/(process '/" \
 | sed "s/$/)/" \
 | sed "s/\[x\]/'x/g" \
 | sed "s/\[y\]/'y/g" \
