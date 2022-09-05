@@ -105,9 +105,10 @@ impl<C: Classifier> Rasterizer for DecisionTreeRasterizer<C> {
 
         for x in 0..img.width() {
             for y in 0..img.height() {
-                let center_x = (x / self.center_diameter) * self.center_diameter + (self.center_diameter / 2);
-                let center_y = (y / self.center_diameter) * self.center_diameter + (self.center_diameter / 2);
-                let color_id = fit[(center_x * img.height() + center_y) as usize] as u32;
+                let cd = self.center_diameter;
+                let cx = (x / cd) * cd + (cd / 2);
+                let cy = (y / cd) * cd + (cd / 2);
+                let color_id = fit[(cx * img.height() + cy) as usize] as u32;
                 sink.put_pixel(
                     x,
                     y,

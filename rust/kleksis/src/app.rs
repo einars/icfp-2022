@@ -1,9 +1,17 @@
+use std::{
+    sync::mpsc::{channel, Receiver, Sender},
+    time::Duration,
+};
+
 use blocks::*;
 use egui::{Color32, Painter, TextEdit};
 use egui_extras::RetainedImage;
+use image::ImageBuffer;
 use parser::{BlockId, CutDirection, ProgCmd};
 use plotter::{EagerBeaver, Plotter};
 use rstats::VecVec;
+
+use crate::ScoreBar;
 
 pub struct TemplateApp<'a> {
     action: Action,
@@ -15,6 +23,7 @@ pub struct TemplateApp<'a> {
 
     cmd_history: Vec<ProgCmd>,
     tot_cost: u32,
+    score_bar: ScoreBar,
 
     next_cmd: Vec<ProgCmd>,
     next: Painting<'a>,
@@ -23,6 +32,11 @@ pub struct TemplateApp<'a> {
     code_error: String,
 
     origin_block: Option<BlockId>,
+
+    replaying: bool,
+    heartbeat_rx: Option<Receiver<()>>,
+    heartbeat_tx: Option<Sender<()>>,
+    curr_op: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -55,15 +69,25 @@ impl<'a> TemplateApp<'a> {
             // Example stuff:
             action: Action::CutHoriz,
             color: [0, 0, 0, 255],
-            target: pixels,
+            target: pixels.clone(),
             current: Painting::new(size),
             cmd_history: vec![],
             tot_cost: 0,
+            score_bar: ScoreBar::new(compadre::compare(
+                ImageBuffer::from_pixel(size.0, size.1, image::Rgba([255, 255, 255, 255]))
+                    .as_flat_samples()
+                    .samples,
+                pixels.as_flat_samples().samples,
+            )),
             next_cmd: vec![],
             next: Painting::new(size),
             code: "".to_string(),
             code_error: "".to_string(),
             origin_block: None,
+            replaying: false,
+            heartbeat_rx: None,
+            heartbeat_tx: None,
+            curr_op: 0,
         }
     }
 }
@@ -84,6 +108,11 @@ impl<'a> eframe::App for TemplateApp<'a> {
             code,
             code_error,
             origin_block,
+            replaying,
+            heartbeat_rx,
+            heartbeat_tx,
+            curr_op,
+            score_bar,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -96,9 +125,6 @@ impl<'a> eframe::App for TemplateApp<'a> {
             // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    if ui.button("Solve").clicked() {
-                        *code = parser::tree_to_source(&EagerBeaver{}.generate(&target));
-                    }
                     if ui.button("Quit").clicked() {
                         _frame.close();
                     }
@@ -160,42 +186,101 @@ impl<'a> eframe::App for TemplateApp<'a> {
                 }
 
                 ui.heading("Scoring");
+                let score = compadre::compare(
+                    current.image.as_flat_samples().as_slice(),
+                    target.as_flat_samples_mut().as_slice(),
+                );
+                let mut next_temp = current.clone();
+                let cost: u32 = next_cmd
+                    .iter()
+                    .map(|cmd| {
+                        compadre::calc_cmd_score(cmd, &next_temp).map_or(0, |cost| {
+                            let _ = next_temp.apply_cmd(cmd);
+                            cost
+                        })
+                    })
+                    .sum();
+                score_bar.update(score, *tot_cost);
                 ui.horizontal(|ui| {
-                    let score = compadre::compare(
-                        current.image.as_flat_samples().as_slice(),
-                        target.as_flat_samples_mut().as_slice(),
-                    );
                     let score_next = compadre::compare(
                         next.image.as_flat_samples().as_slice(),
                         target.as_flat_samples_mut().as_slice(),
                     );
                     ui.label("Score: ");
                     ui.label(score.to_string());
-                    match score_next as i32 - score as i32 {
-                        diff if diff < 0 => {
-                            ui.colored_label(Color32::GREEN, diff.to_string());
+                    if !*replaying {
+                        match score_next as i32 - score as i32 {
+                            diff if diff < 0 => {
+                                ui.colored_label(Color32::GREEN, diff.to_string());
+                            }
+                            diff if diff > 0 => {
+                                ui.colored_label(Color32::RED, diff.to_string());
+                            }
+                            _ => (),
                         }
-                        diff if diff > 0 => {
-                            ui.colored_label(Color32::RED, diff.to_string());
-                        }
-                        _ => (),
                     }
                 });
                 ui.horizontal(|ui| {
-                    let mut next_temp = current.clone();
-                    let cost: u32 = next_cmd
-                        .iter()
-                        .map(|cmd| {
-                            compadre::calc_cmd_score(cmd, &next_temp).map_or(0, |cost| {
-                                let _ = next_temp.apply_cmd(cmd);
-                                cost
-                            })
-                        })
-                        .sum();
                     ui.label("Cost: ");
                     ui.label(tot_cost.to_string());
-                    ui.colored_label(Color32::RED, cost.to_string());
+                    if !*replaying {
+                        ui.colored_label(Color32::RED, cost.to_string());
+                    }
                 });
+
+                ui.heading("Solution visualizer");
+                if ui.button("Replay").clicked() {
+                    if !*replaying {
+                        *current = Painting::new(current.size);
+                        *tot_cost = 0;
+                        *replaying = true;
+                        let signal = channel();
+                        let killswitch = channel();
+                        std::thread::spawn(move || loop {
+                            if let Ok(()) = killswitch.1.recv_timeout(Duration::from_millis(100)) {
+                                break;
+                            }
+                            if let Err(_) = signal.0.send(()) {
+                                break;
+                            }
+                        });
+                        *heartbeat_rx = Some(signal.1);
+                        *heartbeat_tx = Some(killswitch.0);
+                        *curr_op = 0;
+                        *cmd_history = parser::source_to_tree(code).unwrap_or(vec![]);
+                    } else {
+                        *current = Painting::new(current.size);
+                        *replaying = false;
+                        if let Some(tx) = heartbeat_tx {
+                            tx.send(()).unwrap();
+                        }
+                        *heartbeat_rx = None;
+                        *heartbeat_tx = None;
+                    }
+                }
+                // Continue replay on heartbeat
+                if let Some(ref rx) = heartbeat_rx {
+                    if let Ok(()) = rx.try_recv() {
+                        if *curr_op < cmd_history.len() {
+                            *tot_cost +=
+                                compadre::calc_cmd_score(&cmd_history[*curr_op], &current).unwrap();
+                            current.apply_cmd(&cmd_history[*curr_op]).unwrap();
+                            *curr_op += 1;
+                        } else {
+                            *current = Painting::new(current.size);
+                            *replaying = false;
+                            if let Some(tx) = heartbeat_tx {
+                                tx.send(()).unwrap();
+                            }
+                            *heartbeat_rx = None;
+                            *heartbeat_tx = None;
+                        }
+                    }
+                }
+
+                if ui.button("Solve (Plotter)").clicked() {
+                    *code = parser::tree_to_source(&EagerBeaver {}.generate(&target));
+                }
 
                 ui.heading("Program");
                 egui::ScrollArea::vertical().show(ui, |ui| {
@@ -247,6 +332,16 @@ impl<'a> eframe::App for TemplateApp<'a> {
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                RetainedImage::from_color_image(
+                    "Score bar",
+                    egui::ColorImage::from_rgba_unmultiplied(
+                        [20, 400],
+                        &score_bar.get_img().as_flat_samples().as_slice(),
+                    ),
+                )
+                .show(ui);
+
             let canvas;
 
             if ctx.input().key_down(egui::Key::Space) {
@@ -568,6 +663,7 @@ impl<'a> eframe::App for TemplateApp<'a> {
             egui::TopBottomPanel::bottom("status bar").show_inside(ui, |ui| {
                 ui.label("Hold down space to look at your own masterpiece.");
             })
+        });
         });
 
         if false {

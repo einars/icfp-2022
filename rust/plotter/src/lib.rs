@@ -53,8 +53,8 @@ impl Plotter for EagerBeaver {
 
                 macro_rules! push_cost {
                     ($cmd:expr) => {{
-                        let cost = compadre::calc_cmd_score($cmd, &painting).unwrap();
-                        res.push(ProgCmd::Comment(format!("Cost: {cost}")))
+                        // let cost = compadre::calc_cmd_score($cmd, &painting).unwrap();
+                        // res.push(ProgCmd::Comment(format!("Cost: {cost}")))
                     }}
                 }
 

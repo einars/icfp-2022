@@ -41,8 +41,8 @@ impl TemplateApp {
             result: None,
             size: size,
             criterion: DTCriterion::Entropy,
-            diameter: 18,
-            search_depth: 16,
+            diameter: 16,
+            search_depth: 18,
             save_name: format!("{file_name}.rasta.png"),
             score: 0,
         }
