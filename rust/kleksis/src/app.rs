@@ -2,6 +2,7 @@ use blocks::*;
 use egui::{Color32, Painter, TextEdit};
 use egui_extras::RetainedImage;
 use parser::{BlockId, CutDirection, ProgCmd};
+use plotter::{EagerBeaver, Plotter};
 use rstats::VecVec;
 
 pub struct TemplateApp<'a> {
@@ -95,6 +96,9 @@ impl<'a> eframe::App for TemplateApp<'a> {
             // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
+                    if ui.button("Solve").clicked() {
+                        *code = parser::tree_to_source(&EagerBeaver{}.generate(&target));
+                    }
                     if ui.button("Quit").clicked() {
                         _frame.close();
                     }
