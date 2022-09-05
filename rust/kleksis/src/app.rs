@@ -249,7 +249,6 @@ impl<'a> eframe::App for TemplateApp<'a> {
                         *curr_op = 0;
                         *cmd_history = parser::source_to_tree(code).unwrap_or(vec![]);
                     } else {
-                        *current = Painting::new(current.size);
                         *replaying = false;
                         if let Some(tx) = heartbeat_tx {
                             tx.send(()).unwrap();
@@ -267,7 +266,6 @@ impl<'a> eframe::App for TemplateApp<'a> {
                             current.apply_cmd(&cmd_history[*curr_op]).unwrap();
                             *curr_op += 1;
                         } else {
-                            *current = Painting::new(current.size);
                             *replaying = false;
                             if let Some(tx) = heartbeat_tx {
                                 tx.send(()).unwrap();
