@@ -51,10 +51,18 @@ impl Plotter for EagerBeaver {
                     };
                 }
 
+                macro_rules! push_cost {
+                    ($cmd:expr) => {{
+                        let cost = compadre::calc_cmd_score($cmd, &painting).unwrap();
+                        res.push(ProgCmd::Comment(format!("Cost: {cost}")))
+                    }}
+                }
+
                 macro_rules! color {
                     () => {{
                         let id = painting.block_by_pos((x, y)).unwrap();
                         let cmd = ProgCmd::Color(id, to_color(pixel));
+                        push_cost!(&cmd);
                         painting.apply_cmd(&cmd).unwrap();
                         res.push(cmd);
                     }};
@@ -64,6 +72,7 @@ impl Plotter for EagerBeaver {
                     () => {
                         let id = painting.block_by_pos((x, y)).unwrap();
                         let cmd = ProgCmd::LineCut(id, CutDirection::X, x);
+                        push_cost!(&cmd);
                         painting.apply_cmd(&cmd).unwrap();
                         res.push(cmd);
                     };
@@ -73,6 +82,7 @@ impl Plotter for EagerBeaver {
                     () => {
                         let id = painting.block_by_pos((x, y)).unwrap();
                         let cmd = ProgCmd::LineCut(id, CutDirection::Y, y);
+                        push_cost!(&cmd);
                         painting.apply_cmd(&cmd).unwrap();
                         res.push(cmd);
                     };
@@ -82,6 +92,7 @@ impl Plotter for EagerBeaver {
                     () => {
                         let id = painting.block_by_pos((x, y)).unwrap();
                         let cmd = ProgCmd::PointCut(id, (x, y));
+                        push_cost!(&cmd);
                         painting.apply_cmd(&cmd).unwrap();
                         res.push(cmd);
                     };
@@ -92,6 +103,7 @@ impl Plotter for EagerBeaver {
                         let id1 = painting.block_by_pos((x, y)).unwrap();
                         let id2 = painting.block_by_pos((x - 1, y)).unwrap();
                         let cmd = ProgCmd::Merge(id1, id2);
+                        push_cost!(&cmd);
                         painting.apply_cmd(&cmd).unwrap();
                         res.push(cmd);
                     };

@@ -36,6 +36,7 @@ pub struct DecisionTreeRasterizer<C: Classifier> {
     img_matrix: DenseMatrix<f32>,
     classified_vec: Vec<f32>,
     params: DecisionTreeClassifierParameters,
+    center_diameter: u32,
 }
 
 impl<C: Classifier> DecisionTreeRasterizer<C> {
@@ -70,6 +71,7 @@ impl<C: Classifier> DecisionTreeRasterizer<C> {
                 max_depth: Some(5),
                 ..Default::default()
             },
+            center_diameter: 1,
         })
     }
 
@@ -80,6 +82,11 @@ impl<C: Classifier> DecisionTreeRasterizer<C> {
 
     pub fn with_criterion(mut self, criterion: SplitCriterion) -> Self {
         self.params.criterion = criterion;
+        self
+    }
+
+    pub fn with_diameter(mut self, diameter: u32) -> Self {
+        self.center_diameter = diameter;
         self
     }
 }
@@ -98,7 +105,9 @@ impl<C: Classifier> Rasterizer for DecisionTreeRasterizer<C> {
 
         for x in 0..img.width() {
             for y in 0..img.height() {
-                let color_id = fit[(x * img.height() + y) as usize] as u32;
+                let center_x = (x / self.center_diameter) * self.center_diameter + (self.center_diameter / 2);
+                let center_y = (y / self.center_diameter) * self.center_diameter + (self.center_diameter / 2);
+                let color_id = fit[(center_x * img.height() + center_y) as usize] as u32;
                 sink.put_pixel(
                     x,
                     y,

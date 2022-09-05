@@ -18,6 +18,7 @@ pub struct TemplateApp {
     size: (u32, u32),
     criterion: DTCriterion,
     search_depth: u16,
+    diameter: u32,
     save_name: String,
     score: u32,
 }
@@ -39,8 +40,9 @@ impl TemplateApp {
             target: pixels,
             result: None,
             size: size,
-            criterion: DTCriterion::Gini,
-            search_depth: 10,
+            criterion: DTCriterion::Entropy,
+            diameter: 18,
+            search_depth: 16,
             save_name: format!("{file_name}.rasta.png"),
             score: 0,
         }
@@ -57,6 +59,7 @@ impl eframe::App for TemplateApp {
             size,
             criterion,
             search_depth,
+            diameter,
             save_name,
             score,
         } = self;
@@ -95,6 +98,7 @@ impl eframe::App for TemplateApp {
                         ui.selectable_value(criterion, DTCriterion::ClassificationError, "Error");
                     });
                 ui.add(egui::Slider::new(&mut *search_depth, 4..=24).text("Tree depth"));
+                ui.add(egui::Slider::new(&mut *diameter, 1..=50).text("Sampling diameter"));
                 ui.colored_label(Color32::GOLD, "Here be exponents!");
                 if ui.button("Generate").clicked() {
                     let rasterizer =
@@ -107,7 +111,8 @@ impl eframe::App for TemplateApp {
                                 DTCriterion::ClassificationError => {
                                     SplitCriterion::ClassificationError
                                 }
-                            });
+                            })
+                            .with_diameter(*diameter);
                     *result = Some(rasterizer.rasterize(&target).unwrap());
                     if let Some(img) = result {
                     *score = compadre::compare(

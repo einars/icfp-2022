@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 blocks = { path = "../blocks" }
+compadre = { path = "../compadre" }
 image = "0.24.3"
 parser = { path = "../parser" }
