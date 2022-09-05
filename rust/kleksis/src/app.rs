@@ -228,6 +228,11 @@ impl<'a> eframe::App for TemplateApp<'a> {
                     }
                 });
 
+                ui.horizontal(|ui| {
+                    ui.label("Best total score: ");
+                    ui.colored_label(Color32::GREEN, score_bar.get_hiscore().to_string());
+                });
+
                 ui.heading("Solution visualizer");
                 if ui.button("Replay").clicked() {
                     if !*replaying {

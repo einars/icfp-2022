@@ -8,6 +8,7 @@ use plotter::ImgBuf;
 pub struct ScoreBar {
     start_score: f32,
     min_score: u32,
+    min_total: u32,
     img: ImgBuf,
 }
 
@@ -16,11 +17,15 @@ impl ScoreBar {
         ScoreBar {
             start_score: start_score as f32,
             min_score: 0,
+            min_total: start_score,
             img: ImageBuffer::from_pixel(20, 400, Rgba([0, 255, 0, 255])),
         }
     }
 
     pub fn update(&mut self, score: u32, cost: u32) {
+        if score + cost < self.min_total {
+            self.min_total = score + cost;
+        }
         let min_score = ((1.0 - ((score as f32 + cost as f32) / self.start_score)) * 400.0) as u32;
         if  min_score > self.min_score {
             self.min_score = min_score;
@@ -43,5 +48,9 @@ impl ScoreBar {
 
     pub fn get_img(&self) -> &ImgBuf {
         &self.img
+    }
+
+    pub fn get_hiscore(&self) -> u32 {
+        self.min_total
     }
 }
