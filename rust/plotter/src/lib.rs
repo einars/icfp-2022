@@ -27,7 +27,7 @@ impl Plotter for EagerBeaver {
                         match (px, py) {
                             (Some(px), Some(py)) => {
                                 (px as i32 - x as i32).abs() + (py as i32 - y as i32).abs() > 5
-                                && (py == y || (py as i32 - y as i32).abs() > 5)
+                                    && (py == y || (py as i32 - y as i32).abs() > 5)
                             }
                             _ => true,
                         }
@@ -55,7 +55,7 @@ impl Plotter for EagerBeaver {
                     ($cmd:expr) => {{
                         // let cost = compadre::calc_cmd_score($cmd, &painting).unwrap();
                         // res.push(ProgCmd::Comment(format!("Cost: {cost}")))
-                    }}
+                    }};
                 }
 
                 macro_rules! color {

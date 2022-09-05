@@ -27,7 +27,7 @@ impl ScoreBar {
             self.min_total = score + cost;
         }
         let min_score = ((1.0 - ((score as f32 + cost as f32) / self.start_score)) * 400.0) as u32;
-        if  min_score > self.min_score {
+        if min_score > self.min_score {
             self.min_score = min_score;
         }
         let cost_at = 1.0 - (cost as f32) / self.start_score;

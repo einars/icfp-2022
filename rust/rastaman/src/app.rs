@@ -1,6 +1,9 @@
-use crate::{DecisionTreeRasterizer, Rasterizer, UniqueColorClassifier};
+use crate::{
+    Classifier, DecisionTreeRasterizer, FrequentColorClassifier, Rasterizer, UniqueColorClassifier,
+};
 use egui::{Color32, Painter, TextEdit};
 use egui_extras::RetainedImage;
+use image::{ImageBuffer, Rgba};
 use smartcore::tree::decision_tree_classifier::SplitCriterion;
 
 use crate::ImgBuf;
@@ -10,6 +13,7 @@ enum DTCriterion {
     Gini,
     Entropy,
     ClassificationError,
+    Passthrough,
 }
 
 pub struct TemplateApp {
@@ -21,6 +25,8 @@ pub struct TemplateApp {
     diameter: u32,
     save_name: String,
     score: u32,
+    cmult: u32,
+    cdist: i32,
 }
 
 impl TemplateApp {
@@ -41,10 +47,12 @@ impl TemplateApp {
             result: None,
             size: size,
             criterion: DTCriterion::Entropy,
-            diameter: 16,
+            diameter: 4,
             search_depth: 18,
             save_name: format!("{file_name}.rasta.png"),
             score: 0,
+            cmult: 500,
+            cdist: 1000,
         }
     }
 }
@@ -62,6 +70,8 @@ impl eframe::App for TemplateApp {
             diameter,
             save_name,
             score,
+            cmult,
+            cdist,
         } = self;
 
         // Examples of how to create different panels and windows.
@@ -89,6 +99,9 @@ impl eframe::App for TemplateApp {
                     ui.label("Maximum possible score: ");
                     ui.colored_label(Color32::GREEN, score.to_string());
                 });
+                ui.heading("Classifier settings");
+                ui.add(egui::Slider::new(&mut *cdist, 0..=10000).text("Similarity"));
+                ui.add(egui::Slider::new(&mut *cmult, 1..=5000).text("Freq. difference"));
                 ui.heading("Decision Tree settings");
                 egui::ComboBox::from_label("Split Criterion")
                     .selected_text(format!("{:?}", criterion))
@@ -96,13 +109,44 @@ impl eframe::App for TemplateApp {
                         ui.selectable_value(criterion, DTCriterion::Gini, "Gini");
                         ui.selectable_value(criterion, DTCriterion::Entropy, "Entropy");
                         ui.selectable_value(criterion, DTCriterion::ClassificationError, "Error");
+                        ui.selectable_value(criterion, DTCriterion::Passthrough, "Passthrough");
                     });
                 ui.add(egui::Slider::new(&mut *search_depth, 4..=24).text("Tree depth"));
                 ui.add(egui::Slider::new(&mut *diameter, 1..=50).text("Sampling diameter"));
                 ui.colored_label(Color32::GOLD, "Here be exponents!");
                 if ui.button("Generate").clicked() {
-                    let rasterizer =
-                        DecisionTreeRasterizer::<UniqueColorClassifier>::from_image(&target)
+                    let classifier = FrequentColorClassifier::new(&target, *cmult, *cdist);
+                    if *criterion == DTCriterion::Passthrough {
+                        let cvec: Vec<f32> = classifier
+                            .classify(target)
+                            .unwrap()
+                            .into_iter()
+                            .map(|x| x as f32)
+                            .collect();
+                        let mut sink = ImageBuffer::new(target.width(), target.height());
+                        let colormap = classifier.colormap();
+                        for x in 0..target.width() {
+                            for y in 0..target.height() {
+                                let color_id = cvec[(x * target.height() + y) as usize] as u32;
+                                sink.put_pixel(
+                                    x,
+                                    y,
+                                    colormap
+                                        .get(&color_id)
+                                        .ok_or_else(|| {
+                                            panic!(
+                                                "raw id was {:?}",
+                                                cvec[(x * target.height() + y) as usize]
+                                            )
+                                        })
+                                        .unwrap()
+                                        .clone(),
+                                );
+                            }
+                        }
+                        *result = Some(sink);
+                    } else {
+                        let rasterizer = DecisionTreeRasterizer::from_image(&target, classifier)
                             .unwrap()
                             .with_depth(*search_depth)
                             .with_criterion(match criterion {
@@ -111,15 +155,17 @@ impl eframe::App for TemplateApp {
                                 DTCriterion::ClassificationError => {
                                     SplitCriterion::ClassificationError
                                 }
+                                DTCriterion::Passthrough => panic!("Unreachable code reached"),
                             })
                             .with_diameter(*diameter);
-                    *result = Some(rasterizer.rasterize(&target).unwrap());
+                        *result = Some(rasterizer.rasterize(&target).unwrap());
+                    }
                     if let Some(img) = result {
-                    *score = compadre::compare(
-                        img.as_flat_samples().as_slice(),
-                        target.as_flat_samples_mut().as_slice(),
-                    );
-                }
+                        *score = compadre::compare(
+                            img.as_flat_samples().as_slice(),
+                            target.as_flat_samples_mut().as_slice(),
+                        );
+                    }
                 }
 
                 if let Some(img) = result {
@@ -127,7 +173,7 @@ impl eframe::App for TemplateApp {
                     ui.text_edit_singleline(save_name);
                     if ui.button("Save").clicked() {
                         img.save(save_name).unwrap();
-                    }    
+                    }
                 }
             });
 

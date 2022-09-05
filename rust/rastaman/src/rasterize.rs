@@ -40,8 +40,7 @@ pub struct DecisionTreeRasterizer<C: Classifier> {
 }
 
 impl<C: Classifier> DecisionTreeRasterizer<C> {
-    pub fn from_image(img: &ImgBuf) -> Result<Self, RasterizerError> {
-        let classifier: C = Classifier::from_image(img);
+    pub fn from_image(img: &ImgBuf, classifier: C) -> Result<Self, RasterizerError> {
         let cvec = classifier
             .classify(img)
             .ok_or(RasterizerError::ClassifierFailed)?
