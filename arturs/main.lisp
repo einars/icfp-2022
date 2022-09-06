@@ -528,8 +528,33 @@
 	    (push (box-merge (third children) (fourth children)) product)
 	    (box-merge (first product) (second product))))))))
 
+(defun rect-color (box x y)
+  (average-color (make-shape :pos (box-pos box) :size (pos-new x y))))
+
+(defun vertical-pillars-of-fame (p-w p-h)
+  (let ((stepx (floor (/ *image-w* p-w)))
+	(stepy (floor (/ *image-h* p-h))))
+    (loop for y from 0 to (- *image-h* stepy) by stepy do
+      (let (vchildren product)
+	(when (> y 0)
+	  (setf vchildren (lcut (background-box) 'y y))
+	  (setf product (second vchildren)))
+	(loop for x from 0 to (- *image-w* stepx) by stepx do
+	  (let (hchildren)
+	    (when (> x 0)
+	      (let ((box (or product (background-box))))
+		(setf hchildren (lcut box 'x x))))
+	    (let ((box (box-by-x-y x y)))
+	      (color box (rect-color box stepx stepy)))
+	    (when hchildren
+	      (setf product (apply #'box-merge hchildren)))))
+	(when (> y 0)
+	  (box-merge (first vchildren) product))))))
+
 (defun run-mosaic-program-solver (x y)
-  (vertical-weaver-with-pcut x y))
+  (vertical-pillars-of-fame x y))
+;  (vertical-weaver-with-pcut x y))
+;  (vertical-weaver-with-lcut x y))
 ;  (horizontal-shreader x y))
 
 (defun random-elt (l)
